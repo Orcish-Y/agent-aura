@@ -26,22 +26,15 @@
       <Style.Triggers>
         <DataTrigger Binding="{Binding IsHovered}" Value="True">
           <Setter Property="Visibility" Value="Visible" />
-        </DataTrigger>
-        <MultiDataTrigger>
-          <MultiDataTrigger.Conditions>
-            <Condition Binding="{Binding IsHovered}" Value="True" />
-            <Condition Binding="{Binding DataContext.IsMotionEnabled, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
-          </MultiDataTrigger.Conditions>
-          <Setter Property="Visibility" Value="Visible" />
           <Setter Property="Opacity" Value="0" />
-          <MultiDataTrigger.EnterActions>
+          <DataTrigger.EnterActions>
             <BeginStoryboard>
               <Storyboard>
                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.18" />
               </Storyboard>
             </BeginStoryboard>
-          </MultiDataTrigger.EnterActions>
-        </MultiDataTrigger>
+          </DataTrigger.EnterActions>
+        </DataTrigger>
       </Style.Triggers>
     </Style>
     <Style TargetType="Button">
@@ -120,7 +113,6 @@
                 </Border>
                 <controls:ScrollingText Grid.Column="1"
                                         Text="{Binding Title}"
-                                        IsMotionEnabled="{Binding DataContext.IsMotionEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
                                         FontWeight="SemiBold" />
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
@@ -133,7 +125,6 @@
                                         Grid.ColumnSpan="2"
                                         Margin="0,5,0,0"
                                         Text="{Binding ProjectContext}"
-                                        IsMotionEnabled="{Binding DataContext.IsMotionEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Foreground="#BED0E2"
                                         Style="{StaticResource HoverDetailLine}" />
                 <TextBlock Grid.Row="2"
@@ -150,7 +141,6 @@
                                         Grid.ColumnSpan="2"
                                         Margin="0,5,0,0"
                                         Text="{Binding Detail}"
-                                        IsMotionEnabled="{Binding DataContext.IsMotionEnabled, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Foreground="#9DADBD"
                                         Style="{StaticResource HoverDetailLine}" />
               </Grid>
@@ -158,13 +148,11 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-      <DockPanel Grid.Row="2" Margin="0,8,0,0">
-        <CheckBox Content="Reduced motion"
-                  IsChecked="{Binding ReducedMotion}"
-                  Foreground="#E8EDF4"
-                  VerticalAlignment="Center" />
-        <Button DockPanel.Dock="Right" Content="Flash tray" Click="OnFlashTrayClicked" />
-      </DockPanel>
+      <Button Grid.Row="2"
+              Margin="0,8,0,0"
+              HorizontalAlignment="Right"
+              Content="Flash tray"
+              Click="OnFlashTrayClicked" />
     </Grid>
   </Border>
 </Window>

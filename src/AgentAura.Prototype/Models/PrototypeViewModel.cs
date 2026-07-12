@@ -3,7 +3,6 @@ namespace AgentAura.Prototype.Models;
 public sealed class PrototypeViewModel : INotifyPropertyChanged
 {
     private bool _isPinned;
-    private bool _reducedMotion;
     private bool _isHeaderVisible = true;
 
     public PrototypeViewModel()
@@ -48,24 +47,6 @@ public sealed class PrototypeViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
         }
     }
-
-    public bool ReducedMotion
-    {
-        get => _reducedMotion;
-        set
-        {
-            if (_reducedMotion == value)
-            {
-                return;
-            }
-
-            _reducedMotion = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ReducedMotion)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMotionEnabled)));
-        }
-    }
-
-    public bool IsMotionEnabled => !ReducedMotion;
 
     public bool IsHeaderVisible
     {

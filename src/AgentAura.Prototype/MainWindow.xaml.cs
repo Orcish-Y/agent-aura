@@ -14,7 +14,6 @@ public partial class MainWindow : Window
         _windowStateStore = windowStateStore;
         _trayController = trayController;
         DataContext = _viewModel;
-        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         InitializeComponent();
         Loaded += OnLoaded;
     }
@@ -107,21 +106,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnFlashTrayClicked(object sender, RoutedEventArgs e)
-    {
-        if (!_viewModel.ReducedMotion)
-        {
-            _trayController.StartFlashing();
-        }
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(PrototypeViewModel.ReducedMotion) && _viewModel.ReducedMotion)
-        {
-            _trayController.StopFlashing();
-        }
-    }
+    private void OnFlashTrayClicked(object sender, RoutedEventArgs e) => _trayController.StartFlashing();
 
     private void OnAgentItemMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {

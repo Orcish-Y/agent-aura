@@ -6,12 +6,7 @@
   <Grid ClipToBounds="True">
     <TextBlock x:Name="TextContent"
                Text="{Binding Text, RelativeSource={RelativeSource AncestorType=UserControl}}"
-               TextTrimming="None"
-               TextWrapping="NoWrap"
-               RenderTransformOrigin="0,0.5">
-      <TextBlock.RenderTransform>
-        <TranslateTransform x:Name="TextTransform" />
-      </TextBlock.RenderTransform>
-    </TextBlock>
+               TextTrimming="CharacterEllipsis"
+               TextWrapping="NoWrap" />
   </Grid>
 </UserControl>
