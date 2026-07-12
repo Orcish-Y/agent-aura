@@ -18,7 +18,7 @@ The app appears in the system tray without a taskbar button. Its tray menu can s
 dotnet publish src/AgentAura.Prototype/AgentAura.Prototype.csproj -c Release -r win-x64 --self-contained true
 ```
 
-Run the resulting artifact on a clean Windows 11 VM that has no .NET runtime installed. The validation steps, gates and outcome record are in [prototype-validation.md](prototype-validation.md).
+Run the resulting artifact on a clean Windows 11 VM that has no .NET runtime installed. The validation steps, gates and outcome record are in [prototype-validation.md](prototype-validation.md); the detailed Chinese procedure is in [WINDOWS_VALIDATION_GUIDE.zh-CN.md](WINDOWS_VALIDATION_GUIDE.zh-CN.md).
 
 ## Proposed product-behaviour seam
 
