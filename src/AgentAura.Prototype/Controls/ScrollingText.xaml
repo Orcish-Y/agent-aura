@@ -1,0 +1,17 @@
+<UserControl x:Class="AgentAura.Prototype.Controls.ScrollingText"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ClipToBounds="True"
+             ToolTip="{x:Null}">
+  <Grid ClipToBounds="True">
+    <TextBlock x:Name="TextContent"
+               Text="{Binding Text, RelativeSource={RelativeSource AncestorType=UserControl}}"
+               TextTrimming="None"
+               TextWrapping="NoWrap"
+               RenderTransformOrigin="0,0.5">
+      <TextBlock.RenderTransform>
+        <TranslateTransform x:Name="TextTransform" />
+      </TextBlock.RenderTransform>
+    </TextBlock>
+  </Grid>
+</UserControl>
