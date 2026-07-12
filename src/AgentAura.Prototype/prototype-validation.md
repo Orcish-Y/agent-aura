@@ -1,31 +1,31 @@
-# WPF observation-shell validation record
+# WPF 观察壳验证记录
 
-Run this protocol on a clean Windows 11 VM and record results in the table below. The prototype is accepted only if every core gate passes. A failed core gate starts a like-for-like Tauri comparison; it does not automatically select Tauri.
+请在干净的 Windows 11 虚拟机上执行本协议，并在下表中记录结果。仅当所有核心关卡均通过时，才接受该原型。核心关卡失败会启动同等条件下的 Tauri 对比；这并不自动决定选用 Tauri。
 
-## Core capability gates
+## 核心能力关卡
 
-| Gate | Procedure | Pass threshold | Result |
+| 关卡 | 操作步骤 | 通过门槛 | 结果 |
 | --- | --- | --- | --- |
-| Tray-only lifecycle | Start the shell; use tray show/hide; use Minimise; left-click the tray icon. | No taskbar button; show, hide, minimise, restore and focus all work. | Not measured |
-| Window behavior | Toggle pinning and enter/leave the window. Resize and drag using the header. | Frameless translucent surface; pinned window stays topmost; header auto-hides only while pinned; unpinned header stays visible. | Not measured |
-| Agent Item behavior | Hover each sample Agent Item and inspect its state cue, controls and long text. | One collapsed line becomes four lines; every state has a shape/text cue; text scrolls without a tooltip. | Not measured |
-| Reduced motion | Enable **Reduced motion**, then hover an Agent Item and its text and use **Flash tray**. | No detail-transition, text, or tray animation starts; all state text remains understandable. | Not measured |
-| Tray acknowledgement | Hide the window, start a tray flash, then left-click the tray icon. | One continuing alert is visible; restore/focus stops it. | Not measured |
-| Window recovery | Place and resize the window, exit, restart; then edit its saved coordinates to an unavailable monitor and restart. | Position, size and pin persist; an off-screen position returns to a visible primary display. | Not measured |
-| Self-contained distribution | Publish `win-x64` self-contained, then launch on a clean VM without .NET. | Starts successfully without a preinstalled .NET runtime. | Not measured |
+| 仅托盘生命周期 | 启动壳程序；通过系统托盘显示/隐藏；使用最小化；左键单击托盘图标。 | 不显示任务栏按钮；显示、隐藏、最小化、还原和聚焦均正常工作。 | 尚未测量 |
+| 窗口行为 | 切换置顶状态，并将鼠标移入/移出窗口。通过标题栏调整大小和拖动窗口。 | 无边框半透明界面；置顶窗口始终保持最前；标题栏仅在置顶时自动隐藏；未置顶时标题栏保持可见。 | 尚未测量 |
+| Agent Item 行为 | 悬停于每个示例 Agent Item，检查其状态提示、控件和长文本。 | 折叠的一行可展开为四行；每种状态均有形状或文字提示；文本可滚动，且无需工具提示。 | 尚未测量 |
+| 减少动态效果 | 启用 **减少动态效果**，然后悬停 Agent Item 及其文本，并使用 **闪烁托盘图标**。 | 不启动详情过渡、文本或托盘动画；所有状态文本仍清晰易懂。 | 尚未测量 |
+| 托盘确认 | 隐藏窗口，开始闪烁托盘图标，然后左键单击托盘图标。 | 有一个持续中的提醒可见；还原/聚焦窗口会停止提醒。 | 尚未测量 |
+| 窗口恢复 | 设置窗口位置和大小，退出后重新启动；然后将其保存的坐标改为不可用显示器上的位置并重启。 | 位置、大小和置顶状态均会保留；屏幕外的位置会回到可见的主显示器。 | 尚未测量 |
+| 自包含分发 | 发布自包含的 `win-x64`，然后在未安装 .NET 的干净虚拟机上启动。 | 无需预先安装 .NET 运行时即可成功启动。 | 尚未测量 |
 
-## Cost and stability gates
+## 成本与稳定性关卡
 
-| Measure | Method | Pass threshold | Result |
+| 指标 | 方法 | 通过门槛 | 结果 |
 | --- | --- | --- | --- |
-| Cold startup | Five cold starts on the target VM; time from process launch to visible tray icon. | Median at or below 1.5 seconds. | Not measured |
-| Idle working set | Leave the shell shown for five minutes without interaction; use Task Manager or PerfMon. | At or below 100 MiB. | Not measured |
-| Idle CPU | Measure over the same five-minute interval. | Average at or below 1%. | Not measured |
-| Package size | Measure the published `win-x64` directory. | At or below 200 MiB. | Not measured |
-| Stability | Exercise tray show/hide, pinning, hover expansion and restarts for eight hours. | No crash, hang, stuck tray icon, or unrecoverable off-screen window. | Not measured |
+| 冷启动 | 在目标虚拟机上进行五次冷启动；计时范围为进程启动至托盘图标可见。 | 中位数不超过 1.5 秒。 | 尚未测量 |
+| 空闲工作集 | 在无交互的情况下让壳程序保持显示五分钟；使用任务管理器或 PerfMon。 | 不超过 100 MiB。 | 尚未测量 |
+| 空闲 CPU | 在同一五分钟区间内测量。 | 平均值不超过 1%。 | 尚未测量 |
+| 包大小 | 测量发布后的 `win-x64` 目录。 | 不超过 200 MiB。 | 尚未测量 |
+| 稳定性 | 连续八小时测试托盘显示/隐藏、置顶、悬停展开和重启。 | 不发生崩溃、卡死、托盘图标卡住或无法恢复的屏幕外窗口。 | 尚未测量 |
 
-## Decision record
+## 决策记录
 
-**Current recommendation:** undecided. The shell must be run and measured on Windows before WPF can be recommended or a Tauri comparison justified.
+**当前建议：**尚未决定。在 Windows 上运行并测量该壳程序之前，不能建议使用 WPF，也无法证明需要进行 Tauri 对比。
 
-If a gate fails, record the Windows version, machine/VM specification, .NET SDK version, exact reproduction steps and observed result here before opening the comparison ticket.
+如果有任何关卡失败，请在创建对比工单前，在此记录 Windows 版本、机器/虚拟机规格、.NET SDK 版本、准确的复现步骤和观察到的结果。
