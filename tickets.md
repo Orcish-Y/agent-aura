@@ -198,3 +198,54 @@ Work the **frontier**: any ticket whose blockers are all done.
 - [ ] Known limitations, supported Codex CLI versions, supported terminal hosts, diagnostics, repair, and uninstall instructions are included with the release.
 - [ ] If WPF failed a prototype gate, the release cannot proceed until the approved Tauri comparison and runtime decision are complete.
 
+## Approved supplement: resource-efficient distribution and observation-window interactions
+
+These `ready-for-agent` tickets implement the confirmed additions in `.scratch/agent-aura-mvp/map.md`. They supersede the older self-contained-package and non-reserved pinned-Header expectations where they conflict.
+
+## Deliver the runtime-prerequisite startup path
+
+**What to build:** A small framework-dependent Agent Aura distribution that starts normally when the required .NET 10 Windows Desktop Runtime is present and gives a clear, user-controlled recovery path when it is absent.
+
+**Blocked by:** None — can start immediately.
+
+- [ ] A framework-dependent package contains Agent Aura's application output without a bundled .NET Windows Desktop Runtime.
+- [ ] Launching on a supported Windows machine with the required runtime opens Agent Aura normally.
+- [ ] Launching without the required runtime shows a clear prerequisite explanation and offers a user-invoked link to Microsoft's official installer.
+- [ ] The prerequisite path neither downloads nor silently installs any runtime; after installation, restarting Agent Aura succeeds.
+- [ ] A repeatable external startup test covers both runtime-present and runtime-missing paths.
+
+## Preserve Agent Message Item positions in Window Pin State
+
+**What to build:** A stable pinned observation window in which the Header can disappear for compactness without causing the Agent Message Item list to jump.
+
+**Blocked by:** None — can start immediately.
+
+- [ ] The observation window has no enclosing border. When Window Pin State is enabled and the pointer leaves the observation window, the Header's content and translucent surface become hidden while its vertical footprint remains reserved.
+- [ ] Entering any portion of the pinned observation window reveals the Header and its translucent surface in that reserved space above stationary Agent Message Items.
+- [ ] Leaving the pinned window hides the Header and its translucent surface again without changing any Agent Message Item's layout position.
+- [ ] When Window Pin State is disabled, the Header and its translucent surface remain visible and normal window stacking is restored.
+- [ ] A real-window interaction test verifies both pointer transitions, Header-surface visibility, absence of a window frame, and layout stability rather than private layout fields.
+
+## Animate Agent Message Item hover transitions
+
+**What to build:** A fluid, predictable way to inspect a Codex Thread by moving between compact and detailed Agent Message Items.
+
+**Blocked by:** None — can start immediately.
+
+- [ ] Moving from outside the observation window onto an Agent Message Item expands its one-line form to the established four-line form over 150 ms.
+- [ ] Leaving an Agent Message Item collapses it to one line over 150 ms.
+- [ ] Moving directly from one Agent Message Item to another starts the prior item's collapse and the next item's expansion concurrently, each lasting 150 ms.
+- [ ] Existing direct-hover overflow text behaviour remains available and does not cause rows to collapse, lose their target, or change the transition duration.
+- [ ] A real-window interaction test verifies the observable start, duration, end state, and concurrent handoff without asserting storyboard internals.
+
+## Establish the post-change resource baseline and regression check
+
+**What to build:** A repeatable, user-representative measurement that shows the delivered distribution's storage cost and confirms that normal observation-window use has stable memory behaviour before any UI-technology change is considered.
+
+**Blocked by:** Deliver the runtime-prerequisite startup path; Preserve Agent Message Item positions in Window Pin State; Animate Agent Message Item hover transitions.
+
+- [ ] The measurement records distribution size for the framework-dependent package and distinguishes it from any separately installed runtime.
+- [ ] The measurement samples startup and representative long-running private memory, working set, CPU, and handle growth while exercising the delivered Window Pin State and Agent Message Item interactions.
+- [ ] The result documents a concrete performance budget and the growth or stability condition that would require another runtime-architecture decision.
+- [ ] The measurement is repeatable enough to detect a material regression in later changes, and reports its Windows, runtime, and scenario assumptions.
+- [ ] Results are communicated in user-meaningful terms and do not treat reclaimable working-set pages as permanently exclusive memory.
