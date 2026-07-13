@@ -51,6 +51,7 @@ internal static class Program
                 scrollingText,
                 truncatedTextBlock,
                 scrollingTextBlock);
+            AssertHoveredOverflowDoesNotCollapseItsRow();
             AssertReducedMotionHasBeenRemoved(application);
 
             Console.WriteLine("PASS: Overflowing Agent Item text scrolls after a delay, pauses at both ends, and Reduced motion is absent from the prototype.");
@@ -147,6 +148,52 @@ internal static class Program
         {
             throw new InvalidOperationException(
                 "Overflowing text did not return to its truncated layer when its own row was no longer hovered.");
+        }
+    }
+
+    private static void AssertHoveredOverflowDoesNotCollapseItsRow()
+    {
+        var scrollingText = new ScrollingText
+        {
+            Width = 240,
+            Text = "This deliberately long fourth Agent Item line must keep its row height while scrolling."
+        };
+        var layoutRoot = new Grid();
+        layoutRoot.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layoutRoot.Children.Add(scrollingText);
+
+        var window = new Window
+        {
+            Width = 260,
+            Height = 100,
+            ShowInTaskbar = false,
+            WindowStyle = WindowStyle.None,
+            Content = layoutRoot
+        };
+
+        try
+        {
+            window.Show();
+            window.UpdateLayout();
+            var collapsedHeight = scrollingText.ActualHeight;
+            if (collapsedHeight <= 0)
+            {
+                throw new InvalidOperationException("The fourth Agent Item line was not measured while truncated.");
+            }
+
+            RaisePointerEvent(scrollingText, "OnMouseEnter");
+            PumpFor(TimeSpan.FromMilliseconds(20));
+            window.UpdateLayout();
+
+            if (scrollingText.ActualHeight < collapsedHeight - 0.5)
+            {
+                throw new InvalidOperationException(
+                    "Hovering an overflowing fourth Agent Item line collapses its row and loses the item's hover target.");
+            }
+        }
+        finally
+        {
+            window.Close();
         }
     }
 

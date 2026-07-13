@@ -10,7 +10,8 @@ public enum ScrollingTextDisplay
 public readonly record struct ScrollingTextVisualState(
     bool ShowsTruncatedText,
     bool ShowsFullText,
-    bool ShouldScroll);
+    bool ShouldScroll,
+    bool KeepsTruncatedLayout);
 
 public static class ScrollingTextPresentation
 {
@@ -20,11 +21,13 @@ public static class ScrollingTextPresentation
             ScrollingTextDisplay.Scrolling => new(
                 ShowsTruncatedText: false,
                 ShowsFullText: true,
-                ShouldScroll: true),
+                ShouldScroll: true,
+                KeepsTruncatedLayout: true),
             _ => new(
                 ShowsTruncatedText: true,
                 ShowsFullText: false,
-                ShouldScroll: false)
+                ShouldScroll: false,
+                KeepsTruncatedLayout: false)
         };
 
     public static ScrollingTextDisplay Resolve(bool isPointerOver, bool hasOverflow)

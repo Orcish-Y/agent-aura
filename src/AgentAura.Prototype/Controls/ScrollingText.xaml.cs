@@ -78,6 +78,7 @@ public partial class ScrollingText : System.Windows.Controls.UserControl
     {
         StopScrolling();
         TruncatedTextContent.Visibility = Visibility.Visible;
+        TruncatedTextContent.Opacity = 1;
         ScrollingViewport.Visibility = Visibility.Collapsed;
 
         if (!_isLoaded || ActualWidth <= 0)
@@ -88,9 +89,10 @@ public partial class ScrollingText : System.Windows.Controls.UserControl
         ScrollingTextContent.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
         var overflowWidth = ScrollingTextContent.DesiredSize.Width - ActualWidth;
         var visualState = ScrollingTextPresentation.ResolveVisualState(_isPointerOver, overflowWidth > 0);
-        TruncatedTextContent.Visibility = visualState.ShowsTruncatedText
+        TruncatedTextContent.Visibility = visualState.ShowsTruncatedText || visualState.KeepsTruncatedLayout
             ? Visibility.Visible
             : Visibility.Collapsed;
+        TruncatedTextContent.Opacity = visualState.ShowsTruncatedText ? 1 : 0;
         ScrollingViewport.Visibility = visualState.ShowsFullText
             ? Visibility.Visible
             : Visibility.Collapsed;

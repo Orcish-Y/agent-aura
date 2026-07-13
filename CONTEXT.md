@@ -8,7 +8,7 @@ Agent Aura is a lightweight observation surface for the state of local Codex CLI
 A resumable Codex conversation identified by a stable Codex-generated thread ID. It retains its identity across CLI process restarts and contains any number of conversation turns.
 _Avoid_: Agent task, CLI process, turn, session
 
-**Agent Item**:
+**Agent Message Item**:
 The single observation-window entry representing a Codex Thread and its latest known state.
 _Avoid_: Notification, message, task item
 

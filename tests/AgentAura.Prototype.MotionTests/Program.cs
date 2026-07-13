@@ -66,6 +66,12 @@ internal static class Program
             throw new InvalidOperationException(
                 "A hovered overflowing line does not replace the truncated text with the full scrolling text layer.");
         }
+
+        if (!hoveredOverflowVisual.KeepsTruncatedLayout)
+        {
+            throw new InvalidOperationException(
+                "A hovered overflowing fourth Agent Item line does not preserve the truncated layer's layout footprint.");
+        }
     }
 
     private static void AssertDisplay(
