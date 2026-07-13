@@ -55,8 +55,9 @@ internal static class Program
             AssertHoveredOverflowDoesNotCollapseItsRow();
             AssertReducedMotionHasBeenRemoved(application);
             AssertWindowPinStatePreservesAgentMessageItemPositions(application);
+            AssertAgentMessageItemHoverTransitions(application);
 
-            Console.WriteLine("PASS: Agent Item text, Window Pin State, and motion preferences match the prototype behaviour.");
+            Console.WriteLine("PASS: Agent Item text, Window Pin State, and hover motion match the prototype behaviour.");
             return 0;
         }
         catch (Exception exception)
@@ -357,6 +358,115 @@ internal static class Program
         }
     }
 
+    private static void AssertAgentMessageItemHoverTransitions(Application application)
+    {
+        application.Resources["BooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
+        using var trayController = new TrayController(() => { }, () => { }, () => { }, () => { });
+        var mainWindow = new MainWindow(new WindowStateStore(), trayController);
+
+        try
+        {
+            mainWindow.Show();
+            mainWindow.UpdateLayout();
+
+            var agentMessageItems = FindDescendants<Border>(mainWindow)
+                .Where(border =>
+                    border.CornerRadius.TopLeft == 8 &&
+                    border.ActualHeight > 30)
+                .Take(2)
+                .ToArray();
+            if (agentMessageItems.Length != 2)
+            {
+                throw new InvalidOperationException("The real observation window did not render two Agent Message Items.");
+            }
+
+            var firstItem = agentMessageItems[0];
+            var secondItem = agentMessageItems[1];
+            var compactHeight = firstItem.ActualHeight;
+
+            RaiseMouseEvent(firstItem, Mouse.MouseEnterEvent);
+            PumpFor(TimeSpan.FromMilliseconds(350));
+            var expandedHeight = firstItem.ActualHeight;
+            if (expandedHeight <= compactHeight + 20)
+            {
+                throw new InvalidOperationException("Hovering an Agent Message Item did not reveal its detailed form.");
+            }
+
+            var directHoverText = FindDescendant<ScrollingText>(firstItem)
+                ?? throw new InvalidOperationException("The expanded Agent Message Item did not render its overflow text control.");
+            var scrollingViewport = FindDescendant<Canvas>(directHoverText)
+                ?? throw new InvalidOperationException("The overflow text control did not render its scrolling viewport.");
+            var overflowViewport = FindDescendant<Grid>(directHoverText)
+                ?? throw new InvalidOperationException("The overflow text control did not render its direct-hover viewport.");
+            RaiseMouseEvent(overflowViewport, Mouse.MouseEnterEvent);
+            PumpFor(TimeSpan.FromMilliseconds(20));
+            if (scrollingViewport.Visibility != Visibility.Visible)
+            {
+                throw new InvalidOperationException(
+                    "Directly hovering overflowing Agent Message Item text did not activate its scrolling presentation.");
+            }
+            AssertNearlyEqual(
+                expandedHeight,
+                firstItem.ActualHeight,
+                "Directly hovering overflow text collapsed its Agent Message Item or lost its hover target.");
+
+            RaiseMouseEvent(firstItem, Mouse.MouseLeaveEvent);
+            PumpFor(TimeSpan.FromMilliseconds(150));
+            AssertStrictlyBetween(
+                firstItem.ActualHeight,
+                compactHeight,
+                expandedHeight,
+                "Leaving an Agent Message Item did not begin a visible collapse transition.");
+            PumpFor(TimeSpan.FromMilliseconds(250));
+            AssertNearlyEqual(
+                compactHeight,
+                firstItem.ActualHeight,
+                "An Agent Message Item did not return to its compact form after the hover transition.");
+
+            var expansionStopwatch = Stopwatch.StartNew();
+            RaiseMouseEvent(firstItem, Mouse.MouseEnterEvent);
+            WaitUntil(
+                () => firstItem.ActualHeight >= expandedHeight - 0.5,
+                TimeSpan.FromSeconds(1),
+                "An Agent Message Item did not finish expanding.");
+            if (expansionStopwatch.Elapsed < TimeSpan.FromMilliseconds(250) ||
+                expansionStopwatch.Elapsed > TimeSpan.FromMilliseconds(650))
+            {
+                throw new InvalidOperationException(
+                    $"Agent Message Item expansion took {expansionStopwatch.ElapsedMilliseconds} ms instead of approximately 300 ms.");
+            }
+
+            RaiseMouseEvent(firstItem, Mouse.MouseLeaveEvent);
+            RaiseMouseEvent(secondItem, Mouse.MouseEnterEvent);
+            PumpFor(TimeSpan.FromMilliseconds(150));
+            AssertStrictlyBetween(
+                firstItem.ActualHeight,
+                compactHeight,
+                expandedHeight,
+                "The prior Agent Message Item did not begin collapsing during a direct hover handoff.");
+            AssertStrictlyBetween(
+                secondItem.ActualHeight,
+                compactHeight,
+                expandedHeight,
+                "The next Agent Message Item did not begin expanding during a direct hover handoff.");
+
+            PumpFor(TimeSpan.FromMilliseconds(250));
+            AssertNearlyEqual(
+                compactHeight,
+                firstItem.ActualHeight,
+                "The prior Agent Message Item did not finish collapsing after a direct hover handoff.");
+            AssertNearlyEqual(
+                expandedHeight,
+                secondItem.ActualHeight,
+                "The next Agent Message Item did not finish expanding after a direct hover handoff.");
+
+        }
+        finally
+        {
+            mainWindow.CloseForExit();
+        }
+    }
+
     private static void RaiseMouseEvent(UIElement target, RoutedEvent routedEvent)
     {
         target.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
@@ -376,24 +486,34 @@ internal static class Program
         }
     }
 
-    private static T? FindDescendant<T>(DependencyObject root, Func<T, bool>? predicate = null)
+    private static void AssertStrictlyBetween(double actual, double lowerBound, double upperBound, string failureMessage)
+    {
+        if (actual <= lowerBound + 0.5 || actual >= upperBound - 0.5)
+        {
+            throw new InvalidOperationException(
+                $"{failureMessage} Expected a value between {lowerBound:F1} and {upperBound:F1}, received {actual:F1}.");
+        }
+    }
+
+    private static IEnumerable<T> FindDescendants<T>(DependencyObject root)
         where T : DependencyObject
     {
         for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
         {
             var child = VisualTreeHelper.GetChild(root, index);
-            if (child is T match && (predicate is null || predicate(match)))
+            if (child is T match)
             {
-                return match;
+                yield return match;
             }
 
-            var descendant = FindDescendant(child, predicate);
-            if (descendant is not null)
+            foreach (var descendant in FindDescendants<T>(child))
             {
-                return descendant;
+                yield return descendant;
             }
         }
-
-        return null;
     }
+
+    private static T? FindDescendant<T>(DependencyObject root, Func<T, bool>? predicate = null)
+        where T : DependencyObject =>
+        FindDescendants<T>(root).FirstOrDefault(match => predicate is null || predicate(match));
 }
