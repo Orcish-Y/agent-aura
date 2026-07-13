@@ -13,6 +13,8 @@
         WindowStyle="None"
         ResizeMode="CanResizeWithGrip"
         ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
         MouseEnter="OnWindowMouseEnter"
         MouseLeave="OnWindowMouseLeave"
         StateChanged="OnWindowStateChanged"
