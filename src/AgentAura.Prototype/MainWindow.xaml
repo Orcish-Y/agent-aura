@@ -30,14 +30,14 @@
           <DataTrigger.EnterActions>
             <BeginStoryboard>
               <Storyboard>
-                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.3" />
+                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15" />
               </Storyboard>
             </BeginStoryboard>
           </DataTrigger.EnterActions>
           <DataTrigger.ExitActions>
             <BeginStoryboard>
               <Storyboard>
-                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3" />
+                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15" />
               </Storyboard>
             </BeginStoryboard>
           </DataTrigger.ExitActions>
@@ -52,14 +52,14 @@
           <DataTrigger.EnterActions>
             <BeginStoryboard HandoffBehavior="SnapshotAndReplace">
               <Storyboard>
-                <DoubleAnimation Storyboard.TargetProperty="Height" To="118" Duration="0:0:0.3" />
+                <DoubleAnimation Storyboard.TargetProperty="Height" To="118" Duration="0:0:0.15" />
               </Storyboard>
             </BeginStoryboard>
           </DataTrigger.EnterActions>
           <DataTrigger.ExitActions>
             <BeginStoryboard HandoffBehavior="SnapshotAndReplace">
               <Storyboard>
-                <DoubleAnimation Storyboard.TargetProperty="Height" To="42" Duration="0:0:0.3" />
+                <DoubleAnimation Storyboard.TargetProperty="Height" To="42" Duration="0:0:0.15" />
               </Storyboard>
             </BeginStoryboard>
           </DataTrigger.ExitActions>

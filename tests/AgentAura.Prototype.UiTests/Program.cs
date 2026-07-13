@@ -396,7 +396,7 @@ internal static class Program
             var compactHeight = firstItem.ActualHeight;
 
             RaiseMouseEvent(firstItem, Mouse.MouseEnterEvent);
-            PumpFor(TimeSpan.FromMilliseconds(350));
+            PumpFor(TimeSpan.FromMilliseconds(200));
             var expandedHeight = firstItem.ActualHeight;
             if (expandedHeight <= compactHeight + 20)
             {
@@ -422,13 +422,13 @@ internal static class Program
                 "Directly hovering overflow text collapsed its Agent Message Item or lost its hover target.");
 
             RaiseMouseEvent(firstItem, Mouse.MouseLeaveEvent);
-            PumpFor(TimeSpan.FromMilliseconds(150));
+            PumpFor(TimeSpan.FromMilliseconds(75));
             AssertStrictlyBetween(
                 firstItem.ActualHeight,
                 compactHeight,
                 expandedHeight,
                 "Leaving an Agent Message Item did not begin a visible collapse transition.");
-            PumpFor(TimeSpan.FromMilliseconds(250));
+            PumpFor(TimeSpan.FromMilliseconds(125));
             AssertNearlyEqual(
                 compactHeight,
                 firstItem.ActualHeight,
@@ -440,16 +440,16 @@ internal static class Program
                 () => firstItem.ActualHeight >= expandedHeight - 0.5,
                 TimeSpan.FromSeconds(1),
                 "An Agent Message Item did not finish expanding.");
-            if (expansionStopwatch.Elapsed < TimeSpan.FromMilliseconds(250) ||
-                expansionStopwatch.Elapsed > TimeSpan.FromMilliseconds(650))
+            if (expansionStopwatch.Elapsed < TimeSpan.FromMilliseconds(100) ||
+                expansionStopwatch.Elapsed > TimeSpan.FromMilliseconds(400))
             {
                 throw new InvalidOperationException(
-                    $"Agent Message Item expansion took {expansionStopwatch.ElapsedMilliseconds} ms instead of approximately 300 ms.");
+                    $"Agent Message Item expansion took {expansionStopwatch.ElapsedMilliseconds} ms instead of approximately 150 ms.");
             }
 
             RaiseMouseEvent(firstItem, Mouse.MouseLeaveEvent);
             RaiseMouseEvent(secondItem, Mouse.MouseEnterEvent);
-            PumpFor(TimeSpan.FromMilliseconds(150));
+            PumpFor(TimeSpan.FromMilliseconds(75));
             AssertStrictlyBetween(
                 firstItem.ActualHeight,
                 compactHeight,
@@ -461,7 +461,7 @@ internal static class Program
                 expandedHeight,
                 "The next Agent Message Item did not begin expanding during a direct hover handoff.");
 
-            PumpFor(TimeSpan.FromMilliseconds(250));
+            PumpFor(TimeSpan.FromMilliseconds(125));
             AssertNearlyEqual(
                 compactHeight,
                 firstItem.ActualHeight,
