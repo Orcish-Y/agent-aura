@@ -295,6 +295,8 @@ internal static class Program
             var header = VisualTreeHelper.GetParent(
                 VisualTreeHelper.GetParent(headerTitle)) as Grid
                 ?? throw new InvalidOperationException("The observation window Header was not hosted in its public visual container.");
+            var headerSurface = FindAncestor<Border>(header)
+                ?? throw new InvalidOperationException("The observation window Header did not render its background surface.");
             var agentMessageItem = FindDescendant<ListBoxItem>(mainWindow)
                 ?? throw new InvalidOperationException("No Agent Message Item was rendered in the observation window.");
 
@@ -308,7 +310,7 @@ internal static class Program
             RaiseMouseEvent(mainWindow, Mouse.MouseEnterEvent);
             mainWindow.UpdateLayout();
 
-            if (!mainWindow.Topmost || header.Opacity < 0.99)
+            if (!mainWindow.Topmost || headerSurface.Opacity < 0.99)
             {
                 throw new InvalidOperationException(
                     "Enabling Window Pin State does not keep the window topmost with its Header visible while the pointer is inside.");
@@ -324,7 +326,7 @@ internal static class Program
                 itemTopWhileHeaderVisible,
                 GetTopWithinWindow(agentMessageItem, mainWindow),
                 "Hiding the pinned Header moved an Agent Message Item.");
-            if (header.Opacity > 0.01 || header.ActualHeight < headerFootprint - 0.5)
+            if (headerSurface.Opacity > 0.01 || header.ActualHeight < headerFootprint - 0.5)
             {
                 throw new InvalidOperationException(
                     "The pinned Header does not hide while preserving its layout footprint.");
@@ -337,7 +339,7 @@ internal static class Program
                 itemTopWhileHeaderVisible,
                 GetTopWithinWindow(agentMessageItem, mainWindow),
                 "Revealing the pinned Header moved an Agent Message Item.");
-            if (header.Opacity < 0.99)
+            if (headerSurface.Opacity < 0.99)
             {
                 throw new InvalidOperationException("Entering the pinned observation window did not reveal the Header.");
             }
@@ -346,7 +348,7 @@ internal static class Program
             RaiseMouseEvent(mainWindow, Mouse.MouseLeaveEvent);
             mainWindow.UpdateLayout();
 
-            if (mainWindow.Topmost || header.Opacity < 0.99)
+            if (mainWindow.Topmost || headerSurface.Opacity < 0.99)
             {
                 throw new InvalidOperationException(
                     "Disabling Window Pin State did not restore normal stacking with a visible Header.");
@@ -493,6 +495,20 @@ internal static class Program
             throw new InvalidOperationException(
                 $"{failureMessage} Expected a value between {lowerBound:F1} and {upperBound:F1}, received {actual:F1}.");
         }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject element)
+        where T : DependencyObject
+    {
+        for (var parent = VisualTreeHelper.GetParent(element); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+        {
+            if (parent is T match)
+            {
+                return match;
+            }
+        }
+
+        return null;
     }
 
     private static IEnumerable<T> FindDescendants<T>(DependencyObject root)
