@@ -73,22 +73,20 @@
     </Style>
   </Window.Resources>
   <Border Margin="8"
-          CornerRadius="12"
-          Background="Transparent"
-          BorderBrush="#637286"
-          BorderThickness="1"
-          ClipToBounds="True">
+          Background="Transparent">
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
       </Grid.RowDefinitions>
       <Border Grid.Row="0"
-              CornerRadius="11,11,0,0"
               Background="#E6141B25"
               Padding="10,10,10,0">
         <Border.Style>
           <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="#637286" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="CornerRadius" Value="11,11,0,0" />
             <Setter Property="Opacity" Value="1" />
             <Setter Property="IsHitTestVisible" Value="True" />
             <Style.Triggers>
@@ -117,9 +115,20 @@
         </Grid>
       </Border>
       <Border Grid.Row="1"
-              CornerRadius="0,0,11,11"
               Background="#E6141B25"
               Padding="10,0,10,10">
+        <Border.Style>
+          <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="#637286" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="0,0,11,11" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding IsHeaderVisible}" Value="False">
+                <Setter Property="CornerRadius" Value="11" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="*" />

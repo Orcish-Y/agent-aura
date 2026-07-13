@@ -297,6 +297,8 @@ internal static class Program
                 ?? throw new InvalidOperationException("The observation window Header was not hosted in its public visual container.");
             var headerSurface = FindAncestor<Border>(header)
                 ?? throw new InvalidOperationException("The observation window Header did not render its background surface.");
+            var windowFrame = FindAncestor<Border>(headerSurface)
+                ?? throw new InvalidOperationException("The observation window did not render its frame container.");
             var agentMessageItem = FindDescendant<ListBoxItem>(mainWindow)
                 ?? throw new InvalidOperationException("No Agent Message Item was rendered in the observation window.");
 
@@ -330,6 +332,21 @@ internal static class Program
             {
                 throw new InvalidOperationException(
                     "The pinned Header does not hide while preserving its layout footprint.");
+            }
+            if (windowFrame.BorderThickness.Top > 0.01)
+            {
+                throw new InvalidOperationException(
+                    "Hiding the Header left the window frame above the Agent Message Item region.");
+            }
+            if (FindDescendant<Border>(
+                    mainWindow,
+                    border =>
+                        border.BorderThickness.Top > 0.01 &&
+                        border.CornerRadius.TopLeft >= 11 &&
+                        border.Background is SolidColorBrush { Color: { A: 0xE6, R: 0x14, G: 0x1B, B: 0x25 } }) is null)
+            {
+                throw new InvalidOperationException(
+                    "Hiding the Header did not move the rounded frame to the Agent Message Item region.");
             }
 
             RaiseMouseEvent(mainWindow, Mouse.MouseEnterEvent);
