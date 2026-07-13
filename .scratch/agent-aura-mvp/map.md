@@ -21,6 +21,8 @@ Produce an implementation-ready MVP product and technical specification for Agen
 
 <!-- Resolved ticket pointers are appended here. -->
 
+- The WPF prototype does not include a Reduced motion setting. Agent Item title and detail text are always ellipsized within their available line; the existing detail fade and tray flashing remain available.
+
 ## Not yet specified
 
 - Exact visual styling and motion values beyond the agreed interaction model may need refinement after the first WPF shell prototype.
@@ -34,4 +36,3 @@ Produce an implementation-ready MVP product and technical specification for Agen
 - Windows toast notifications and notification sounds.
 - Privacy mode and guaranteed screen-capture exclusion.
 - Production implementation during this wayfinding effort.
-

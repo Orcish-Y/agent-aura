@@ -50,9 +50,9 @@ Agent Aura does not require users to launch Codex from inside the application. A
 30. As a Codex CLI user, I want the second expanded line to show project name and working directory, so that I can locate the Thread's work.
 31. As a Codex CLI user, I want the third expanded line to show state, last-change time, and current-turn duration, so that I understand recency and elapsed work.
 32. As a Codex CLI user, I want the fourth expanded line to show the current activity, waiting reason, error summary, or final outcome, so that I can judge what happened.
-33. As a Codex CLI user, I want overflowing title and detail text to scroll inside its line after a short hover delay, so that I can read it without a tooltip.
-34. As a Codex CLI user, I want scrolling text to pause briefly at each end, so that it remains readable.
-35. As a motion-sensitive user, I want reduced motion to replace scrolling and flashing with static truncation and state indicators, so that the interface remains comfortable.
+33. As a Codex CLI user, I want overflowing title and detail text to be ellipsized within its line without a tooltip, so that the observation window remains compact and predictable.
+34. As a Codex CLI user, I want text truncation to remain the same regardless of visual settings, so that visible content does not depend on a motion preference.
+35. As a Windows user, I do not want a Reduced motion setting, so that the settings surface stays focused and text overflow behavior is consistent.
 36. As a Codex CLI user, I want to assign a persistent Thread Alias, so that I can recognise a conversation by my own name.
 37. As a Codex CLI user, I want a Thread Alias keyed by stable thread ID, so that the correct alias follows a resumed conversation.
 38. As a Codex CLI user, I want title fallback to use Codex title, project folder, and a generic time-based name in that order, so that every Agent Item has a useful label.
@@ -114,13 +114,13 @@ Agent Aura does not require users to launch Codex from inside the application. A
 - The clear action removes succeeded, failed, interrupted, and unknown items while retaining running and Attention State items.
 - Deleting an Agent Item dismisses it until its Thread emits a later Significant Update.
 - Agent Items use a one-line collapsed form and a four-line hover form. Detail lines cover identity/actions, project context, state/timing, and current or final activity.
-- Overflowing text scrolls within its line after a short hover delay and does not use tooltips. Reduced-motion mode uses static truncation instead.
+- Overflowing title and detail text is always ellipsized within its line and does not use tooltips. There is no Reduced motion mode or setting.
 - Collapsed and expanded capacities default to five and fifteen. Their configurable ranges are 1–10 and 5–30; expanded capacity cannot be lower than collapsed capacity. Overflow uses internal scrolling and the expand control does not show hidden count.
 - Pinned mode means always on top with an auto-hidden Header. Unpinned mode uses normal window stacking with the Header always visible.
 - The system tray is the only out-of-window alert surface. Agent Aura does not use Windows toast notifications or sounds in MVP.
 - The tray icon flashes while the window is hidden and a Thread enters attention, succeeded, failed, or interrupted. Opening the observation window acknowledges and stops the tray animation.
 - Closing presents hide-to-tray, exit, cancel, and remember-choice behaviour. Remembered behaviour is resettable from settings.
-- Visual settings include background opacity, theme, UI scale, reduced motion, collapsed capacity, expanded capacity, Attention Pin Span, pin state, startup options, and close-button behaviour.
+- Visual settings include background opacity, theme, UI scale, collapsed capacity, expanded capacity, Attention Pin Span, pin state, startup options, and close-button behaviour.
 - Status styling uses comfortable low-saturation colours plus non-colour cues. Windows high-contrast mode must remain usable.
 - The Codex integration must be passive from the user's perspective: Codex may be launched from the user's ordinary terminal rather than through Agent Aura.
 - Current Codex app-server protocol evidence shows stable UUIDv7 Thread identity and exposes working directory, name, preview, timestamps, source, CLI version, status, and related events. Production implementation must still verify the supported transport for arbitrary Codex TUI instances rather than assuming app-server events are automatically available from them.
@@ -132,13 +132,13 @@ Agent Aura does not require users to launch Codex from inside the application. A
 ## Testing Decisions
 
 - Good tests assert externally observable product behaviour and stable integration contracts. Tests must not depend on WPF ViewModel structure, private classes, animation implementation, local storage layout, or other replaceable internals.
-- The primary product-behaviour seam drives Agent Aura with a controllable Codex Thread event stream and observes the real WPF window. It covers Agent Item identity, state display, Significant Update counting, Attention Pin Span, ordering, clear/delete/reappearance, aliases, capacity, hover expansion, text overflow, reduced motion, tray acknowledgement, close behaviour, persistence, and degraded states.
+- The primary product-behaviour seam drives Agent Aura with a controllable Codex Thread event stream and observes the real WPF window. It covers Agent Item identity, state display, Significant Update counting, Attention Pin Span, ordering, clear/delete/reappearance, aliases, capacity, hover expansion, ellipsized text overflow, tray acknowledgement, close behaviour, persistence, and degraded states.
 - Product-behaviour scenarios must include several concurrent Threads, repeated turns in one Thread, `codex resume` identity continuity, rapid state changes, stale/disconnected sources, out-of-order events, duplicate events, more Agent Items than expanded capacity, and more Attention State items than collapsed capacity.
 - The Codex integration contract seam validates captured fixtures for stable thread ID, working directory, title, lifecycle, approval/input, success, failure, interruption, and liveness. A small real-Codex smoke suite verifies supported behaviour against the minimum and current CLI versions.
 - Integration lifecycle tests install into isolated Codex configuration, inspect health, simulate damaged or missing Agent Aura entries, repair them, and remove them. They verify unrelated configuration remains byte-for-byte or semantically unchanged as appropriate.
 - The Windows packaging seam runs the self-contained artifact on a clean Windows 11 environment and verifies startup without a preinstalled Runtime, tray presence, no taskbar button, transparent/topmost behaviour, multi-monitor recovery, close semantics, sign-in startup, and clean uninstall.
 - Terminal activation tests are organised by supported terminal host. Each verifies correct activation when association is proven and safe fallback when it is not.
-- Accessibility checks cover keyboard access to visible controls, high-contrast rendering, non-colour state cues, scale limits, reduced motion, and readable content at the minimum configured opacity.
+- Accessibility checks cover keyboard access to visible controls, high-contrast rendering, non-colour state cues, scale limits, and readable content at the minimum configured opacity.
 - Performance gates record cold startup time, steady-state idle memory, package size, idle CPU, event-burst handling, and UI responsiveness. Exact acceptance thresholds are established by the WPF prototype before the runtime is committed.
 - Because the repository has no existing implementation or tests, there is no local prior art. The first prototype should establish reusable acceptance-test harnesses at the event-stream-to-window seam rather than creating many narrow module tests.
 
@@ -161,6 +161,5 @@ Agent Aura does not require users to launch Codex from inside the application. A
 - The current development machine is Windows 11 with Ubuntu WSL2. Windows has .NET SDK and Windows Desktop support at version 10.0.9. The actual WPF build and packaging workflow should execute on the Windows side or in a Windows CI runner.
 - The current Codex CLI observed during planning is version 0.144.1. Its generated app-server protocol describes stable UUIDv7 Thread IDs and Thread status events, but support policy and the path from arbitrary TUI processes to Agent Aura remain research items.
 - The Wayfinder map remains the source of truth for unresolved discovery work. In particular, the specification must be refined with the outcomes of “Determine the reliable Codex event integration,” “Prototype the WPF observation shell,” “Map Codex events to Agent Item state,” “Determine terminal recovery behavior,” “Prototype the Codex-to-WPF bridge,” and “Select the MVP runtime architecture.”
-- The initial WPF technical prototype must validate: tray-only operation, transparent frameless topmost window, Header auto-hide, one-to-four-line Agent Item expansion, scrolling overflow text, tray flashing, Codex connectivity, self-contained packaging, and clean-machine launch.
+- The initial WPF technical prototype must validate: tray-only operation, transparent frameless topmost window, Header auto-hide, one-to-four-line Agent Item expansion, ellipsized overflow text, tray flashing, Codex connectivity, self-contained packaging, and clean-machine launch.
 - If a core WPF capability fails or measured distribution/runtime costs are unacceptable, create a like-for-like Tauri prototype before choosing the production runtime.
-

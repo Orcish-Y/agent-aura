@@ -22,4 +22,4 @@ Run the resulting artifact on a clean Windows 11 VM that has no .NET runtime ins
 
 ## Proposed product-behaviour seam
 
-The shell's observable public seam is its real WPF window and system-tray icon: start the executable, use its visible controls and tray interactions, and observe window position, header visibility, Agent Item expansion, motion, and acknowledgement. No automated test has been added yet because this seam needs explicit agreement before applying the project's TDD workflow.
+The shell's observable public seam is its real WPF window and system-tray icon: start the executable, use its visible controls and tray interactions, and observe window position, header visibility, Agent Item expansion, motion, and acknowledgement. Run scripts/check-prototype-startup.ps1 from the repository root to build the prototype and verify that its process remains alive through the 15-second startup observation window.

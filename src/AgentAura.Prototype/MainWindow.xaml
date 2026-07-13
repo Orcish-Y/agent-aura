@@ -133,7 +133,7 @@
                            Margin="0,5,0,0"
                            Foreground="#BED0E2"
                            Style="{StaticResource HoverDetailLine}">
-                  <Run Text="{Binding State}" />
+                  <Run Text="{Binding State, Mode=OneWay}" />
                   <Run Text=" · changed just now · current turn 00:42" />
                 </TextBlock>
                 <controls:ScrollingText Grid.Row="3"
