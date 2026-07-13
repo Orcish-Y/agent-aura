@@ -13,7 +13,7 @@
 - 无边框、半透明、可置顶；置顶时自动隐藏 Header，非置顶时 Header 保持可见。
 - 示例 Agent Item 可从一行展开为四行，提供状态图形、低饱和颜色、编辑/删除、长文本悬停后延迟内部滚动和详情淡入。
 - 窗口位置、尺寸和置顶状态可恢复；失去显示器后回到可见屏幕。
-- 可发布为不依赖预装 .NET Runtime 的 `win-x64` 自包含程序。
+- 可发布为体积较小的、依赖预装 .NET 10 Windows Desktop Runtime 的 `win-x64` 程序；缺少运行时时由用户选择是否打开 Microsoft 官方安装页。
 
 所有“核心能力”门槛必须通过。若任一核心能力失败，或资源/稳定性门槛失败，不直接否定 WPF；应记录证据并启动同等范围的 Tauri 对比。
 
@@ -22,7 +22,8 @@
 准备两套 Windows 11 环境：
 
 1. **开发验证机**：Windows 11、.NET 10 SDK、可从仓库运行源码。
-2. **干净机**：Windows 11 虚拟机、Windows Sandbox 或另一台机器；不能安装 .NET Runtime 或 SDK。它只用于验证自包含发布包。
+2. **运行时存在环境**：Windows 11，安装 x64 .NET 10 Windows Desktop Runtime，用于验证正常启动。
+3. **运行时缺失环境**：Windows 11 虚拟机、Windows Sandbox 或另一台机器；不能安装 .NET 10 Windows Desktop Runtime 或 SDK，用于验证先决条件提示。
 
 在开发验证机的仓库根目录运行：
 
@@ -110,12 +111,12 @@ dotnet run --project src/AgentAura.Prototype/AgentAura.Prototype.csproj
 
 通过标准：有效状态会恢复；不可见坐标和损坏 JSON 都不会让用户失去窗口。
 
-## 5. 自包含发布和干净机启动
+## 5. 框架依赖发布和运行时先决条件
 
-在开发验证机从仓库根目录发布：
+在开发验证机从仓库根目录发布框架依赖包：
 
 ```powershell
-dotnet publish src/AgentAura.Prototype/AgentAura.Prototype.csproj -c Release -r win-x64 --self-contained true
+.\scripts\publish-framework-dependent.ps1
 ```
 
 发布目录是：
@@ -124,14 +125,31 @@ dotnet publish src/AgentAura.Prototype/AgentAura.Prototype.csproj -c Release -r 
 src\AgentAura.Prototype\bin\Release\net10.0-windows\win-x64\publish\
 ```
 
-将该目录的**全部内容**复制到干净 Windows 11 环境。在干净机上：
+将该目录的**全部内容**复制到两套 Windows 11 环境。发布目录不应包含 `coreclr.dll`、`hostfxr.dll` 或 Windows Desktop/WPF 的运行时程序集；它们属于机器级 .NET Runtime，而不是 Agent Aura 包。
 
-1. 确认未安装 .NET Desktop Runtime 或 SDK；可运行 `dotnet --info`，预期找不到 `dotnet` 命令或没有安装信息。
-2. 直接双击 `AgentAura.Prototype.exe`，不要使用 `dotnet run`。
-3. 确认程序可启动，托盘图标出现，且完成第 3 节的最小生命周期检查。
-4. 若启动失败，保存 Windows 错误文本、事件查看器条目和发布目录清单。
+在运行时存在环境中：
 
-通过标准：干净机上不安装额外 Runtime 也能直接启动。仅完成 publish 不算通过；必须完成干净机启动。
+1. 确认 `dotnet --list-runtimes` 包含 `Microsoft.WindowsDesktop.App 10.x`。
+2. 双击 `Start-AgentAura.cmd`，确认程序可启动、托盘图标出现，且完成第 3 节的最小生命周期检查。
+3. 运行自动外部启动检查：
+
+   ```powershell
+   .\scripts\check-framework-dependent-startup.ps1 -Scenario RuntimePresent
+   ```
+
+在运行时缺失环境中：
+
+1. 确认 `dotnet` 不存在，或 `dotnet --list-runtimes` 不包含 `Microsoft.WindowsDesktop.App 10.x`。
+2. 双击 `Start-AgentAura.cmd`。确认程序不会启动，窗口会清楚说明需要 x64 .NET 10 Windows Desktop Runtime，并询问是否打开 Microsoft 官方下载页。
+3. 选择 `y`，确认浏览器才会打开 `https://dotnet.microsoft.com/download/dotnet/10.0/runtime`；选择其他值或直接关闭窗口时不打开浏览器、不下载、不安装任何内容。
+4. 安装运行时后，重新执行同一个 `Start-AgentAura.cmd`，确认应用正常启动。
+5. 在该运行时缺失环境执行：
+
+   ```powershell
+   .\scripts\check-framework-dependent-startup.ps1 -Scenario RuntimeMissing
+   ```
+
+通过标准：运行时存在时应用正常启动；运行时缺失时应用停止在明确的先决条件提示，只有用户确认才会打开官方安装页；安装后重启成功。仅完成 publish 不算通过；必须完成两套环境的外部启动检查。
 
 ## 6. 性能、包体和稳定性测量
 
@@ -182,7 +200,8 @@ $publish = 'src\AgentAura.Prototype\bin\Release\net10.0-windows\win-x64\publish'
 | 托盘闪烁与确认 | Pass / Fail |  |
 | 位置、尺寸、置顶恢复 | Pass / Fail |  |
 | 屏幕外与损坏状态恢复 | Pass / Fail |  |
-| 干净机自包含启动 | Pass / Fail |  |
+| 运行时存在环境启动 | Pass / Fail |  |
+| 运行时缺失环境恢复路径 | Pass / Fail |  |
 | 冷启动（五次与中位数） |  |  |
 | 空闲内存与 CPU |  |  |
 | 发布目录大小 |  |  |

@@ -4,9 +4,9 @@
 
 先从系统托盘图标的菜单选择 **Exit**，确认 `AgentAura.Prototype.exe` 已退出，再进行清理。
 
-## 仅运行自包含发布包
+## 仅运行框架依赖发布包
 
-如果你只是从 `publish` 目录直接双击 `AgentAura.Prototype.exe`，且没有安装 .NET SDK 或 Runtime，清理下面两项即可：
+如果你只是从 `publish` 目录运行 `Start-AgentAura.cmd`，且没有安装 .NET SDK，清理下面两项即可：
 
 1. 删除保存窗口位置、尺寸和置顶状态的文件：
 
@@ -14,9 +14,9 @@
    Remove-Item -LiteralPath "$env:LOCALAPPDATA\AgentAura\Prototype" -Recurse -Force
    ```
 
-2. 删除你复制到验证机上的整个发布目录（包含 `AgentAura.Prototype.exe` 的目录）。
+2. 删除你复制到验证机上的整个发布目录（包含 `Start-AgentAura.cmd` 和 `AgentAura.Prototype.exe` 的目录）。
 
-这样不会影响系统环境变量、注册表、启动项或其他应用。
+这样不会影响系统环境变量、注册表、启动项或其他应用。运行应用所需的 .NET 10 Windows Desktop Runtime 是机器级共享先决条件，不是 Agent Aura 的文件；仅当没有其他应用需要它时，才按 Windows 的卸载流程移除它。
 
 ## 从源码运行或发布
 
@@ -24,7 +24,7 @@
 
 ```powershell
 dotnet run --project src/AgentAura.Prototype/AgentAura.Prototype.csproj
-dotnet publish src/AgentAura.Prototype/AgentAura.Prototype.csproj -c Release -r win-x64 --self-contained true
+.\scripts\publish-framework-dependent.ps1
 ```
 
 除上述状态文件外，项目目录中还会产生编译和发布输出。进入仓库根目录后执行：
