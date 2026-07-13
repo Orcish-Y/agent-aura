@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AgentAura.Prototype;
@@ -53,8 +54,9 @@ internal static class Program
                 scrollingTextBlock);
             AssertHoveredOverflowDoesNotCollapseItsRow();
             AssertReducedMotionHasBeenRemoved(application);
+            AssertWindowPinStatePreservesAgentMessageItemPositions(application);
 
-            Console.WriteLine("PASS: Overflowing Agent Item text scrolls after a delay, pauses at both ends, and Reduced motion is absent from the prototype.");
+            Console.WriteLine("PASS: Agent Item text, Window Pin State, and motion preferences match the prototype behaviour.");
             return 0;
         }
         catch (Exception exception)
@@ -267,6 +269,110 @@ internal static class Program
         finally
         {
             mainWindow.CloseForExit();
+        }
+    }
+
+    private static void AssertWindowPinStatePreservesAgentMessageItemPositions(Application application)
+    {
+        application.Resources["BooleanToVisibilityConverter"] = new BooleanToVisibilityConverter();
+        using var trayController = new TrayController(() => { }, () => { }, () => { }, () => { });
+        var mainWindow = new MainWindow(new WindowStateStore(), trayController);
+
+        try
+        {
+            mainWindow.Show();
+            mainWindow.UpdateLayout();
+
+            var pinButton = FindDescendant<Button>(
+                mainWindow,
+                button => button.Content is string content && content == "Pin")
+                ?? throw new InvalidOperationException("The Window Pin State control was not rendered.");
+            var headerTitle = FindDescendant<TextBlock>(
+                mainWindow,
+                textBlock => textBlock.Text == "Agent Aura")
+                ?? throw new InvalidOperationException("The observation window Header was not rendered.");
+            var header = VisualTreeHelper.GetParent(
+                VisualTreeHelper.GetParent(headerTitle)) as Grid
+                ?? throw new InvalidOperationException("The observation window Header was not hosted in its public visual container.");
+            var agentMessageItem = FindDescendant<ListBoxItem>(mainWindow)
+                ?? throw new InvalidOperationException("No Agent Message Item was rendered in the observation window.");
+
+            if (mainWindow.Topmost)
+            {
+                pinButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                mainWindow.UpdateLayout();
+            }
+
+            pinButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            RaiseMouseEvent(mainWindow, Mouse.MouseEnterEvent);
+            mainWindow.UpdateLayout();
+
+            if (!mainWindow.Topmost || header.Opacity < 0.99)
+            {
+                throw new InvalidOperationException(
+                    "Enabling Window Pin State does not keep the window topmost with its Header visible while the pointer is inside.");
+            }
+
+            var itemTopWhileHeaderVisible = GetTopWithinWindow(agentMessageItem, mainWindow);
+            var headerFootprint = header.ActualHeight;
+
+            RaiseMouseEvent(mainWindow, Mouse.MouseLeaveEvent);
+            mainWindow.UpdateLayout();
+
+            AssertNearlyEqual(
+                itemTopWhileHeaderVisible,
+                GetTopWithinWindow(agentMessageItem, mainWindow),
+                "Hiding the pinned Header moved an Agent Message Item.");
+            if (header.Opacity > 0.01 || header.ActualHeight < headerFootprint - 0.5)
+            {
+                throw new InvalidOperationException(
+                    "The pinned Header does not hide while preserving its layout footprint.");
+            }
+
+            RaiseMouseEvent(mainWindow, Mouse.MouseEnterEvent);
+            mainWindow.UpdateLayout();
+
+            AssertNearlyEqual(
+                itemTopWhileHeaderVisible,
+                GetTopWithinWindow(agentMessageItem, mainWindow),
+                "Revealing the pinned Header moved an Agent Message Item.");
+            if (header.Opacity < 0.99)
+            {
+                throw new InvalidOperationException("Entering the pinned observation window did not reveal the Header.");
+            }
+
+            pinButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            RaiseMouseEvent(mainWindow, Mouse.MouseLeaveEvent);
+            mainWindow.UpdateLayout();
+
+            if (mainWindow.Topmost || header.Opacity < 0.99)
+            {
+                throw new InvalidOperationException(
+                    "Disabling Window Pin State did not restore normal stacking with a visible Header.");
+            }
+        }
+        finally
+        {
+            mainWindow.CloseForExit();
+        }
+    }
+
+    private static void RaiseMouseEvent(UIElement target, RoutedEvent routedEvent)
+    {
+        target.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
+        {
+            RoutedEvent = routedEvent
+        });
+    }
+
+    private static double GetTopWithinWindow(FrameworkElement element, Window window) =>
+        element.TransformToAncestor(window).Transform(new Point()).Y;
+
+    private static void AssertNearlyEqual(double expected, double actual, string failureMessage)
+    {
+        if (Math.Abs(expected - actual) > 0.5)
+        {
+            throw new InvalidOperationException($"{failureMessage} Expected {expected:F1}, received {actual:F1}.");
         }
     }
 

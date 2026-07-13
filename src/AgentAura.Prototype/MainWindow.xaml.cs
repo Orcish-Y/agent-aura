@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     {
         _viewModel.IsPinned = !_viewModel.IsPinned;
         Topmost = _viewModel.IsPinned;
+        _viewModel.IsHeaderVisible = !_viewModel.IsPinned || IsMouseOver;
     }
 
     public void SaveState() => _windowStateStore.Save(new PrototypeWindowState(Left, Top, Width, Height, _viewModel.IsPinned));
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
         Height = state.Height;
         _viewModel.IsPinned = state.IsPinned;
         Topmost = state.IsPinned;
+        _viewModel.IsHeaderVisible = !state.IsPinned || IsMouseOver;
     }
 
     private void OnWindowClosing(object? sender, CancelEventArgs e)
