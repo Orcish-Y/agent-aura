@@ -1,6 +1,6 @@
 # Agent Aura Windows observation-shell prototype
 
-This disposable .NET 10 WPF shell validates the proposed Windows interaction shape before it becomes production architecture. It does not connect to Codex, persist Agent Items, or choose the MVP runtime.
+This disposable .NET 10 WPF shell validates the proposed Windows interaction shape before it becomes production architecture. Its default mode does not connect to Codex or persist Agent Items. A separately enabled, disposable bridge-prototype mode starts an owned loopback App Server and observes remote-TUI Threads for the Codex-to-WPF bridge Wayfinder ticket.
 
 ## Run on Windows 11
 

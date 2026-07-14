@@ -8,12 +8,32 @@ Agent Aura is a lightweight observation surface for the state of local Codex CLI
 A resumable Codex conversation identified by a stable Codex-generated thread ID. It retains its identity across CLI process restarts and contains any number of conversation turns.
 _Avoid_: Agent task, CLI process, turn, session
 
+**Observed Codex Thread**:
+A Codex Thread participating in Agent Aura's managed observation path, making its lifecycle and exact Turn Outcome State available to Agent Aura. Ordinary Codex Threads outside that path are not observed in the MVP.
+_Avoid_: Arbitrary local Thread, Hook-observed Thread
+
 **Agent Message Item**:
 The single observation-window entry representing a Codex Thread and its latest known state.
 _Avoid_: Notification, message, task item
 
+**Dismiss Agent Message Item**:
+The user action that removes an Agent Message Item from the current Agent Aura runtime without deleting its Codex Thread or Thread Alias. A later valid event for that Thread creates a new Agent Message Item.
+_Avoid_: Delete Thread, hide Thread permanently
+
+**Clear Agent Message Items**:
+The user action that removes all current Agent Message Items from the Agent Aura runtime, regardless of state, without deleting any Codex Thread or Thread Alias. A later valid event recreates an item for its Thread.
+_Avoid_: Clear completed items, delete Threads
+
+**Codex Thread Title**:
+An optional user-facing name owned by Codex for a Codex Thread. It may change independently of Agent Aura and is displayed only when the Thread has no Thread Alias.
+_Avoid_: Thread Alias, prompt title, Agent Aura title
+
+**Fallback Thread Title**:
+A provisional Agent Aura display name used when a Codex Thread has neither a Thread Alias nor a Codex Thread Title. It belongs to one Agent Message Item lifecycle rather than to the Codex Thread itself.
+_Avoid_: Thread Alias, Codex Thread Title
+
 **Thread Alias**:
-A user-defined display name persistently associated with one Codex Thread by its stable thread ID.
+A user-defined display name persistently associated with one Codex Thread by its stable thread ID. It takes precedence over the Codex Thread Title and Fallback Thread Title and is not overwritten by a Codex-side name change.
 _Avoid_: CLI alias, process name
 
 **Attention State**:
@@ -21,9 +41,73 @@ A state indicating that a Codex Thread is blocked waiting for user action, such 
 _Avoid_: Unread, pending notification
 
 **Significant Update**:
-A user-meaningful Thread transition: entering the Attention State, reaching a terminal state, or starting a new turn. Streaming text, tool activity, and progress refreshes are not Significant Updates.
+A user-meaningful Thread transition: entering the Attention State, reaching a Turn Outcome State, or starting a new turn. Streaming text, tool activity, and progress refreshes are not Significant Updates.
 _Avoid_: Message, event, notification
+
+**Turn Outcome State**:
+The exact latest result of an Observed Codex Thread's current or most recently ended turn: `completed`, `failed`, or `interrupted`. It does not end or invalidate the resumable Codex Thread.
+_Avoid_: Task status, Thread ended
+
+**Observed State**:
+The neutral state of a Codex Thread that Agent Aura has observed but for which it has not yet received a new-turn or Turn Outcome State signal. It is neither an ended result nor a disconnection.
+_Avoid_: Unknown, idle, Thread ended
 
 **Attention Pin Span**:
 The configurable number of Significant Updates from other Threads for which an Agent Item in the Attention State remains temporarily pinned above the list.
 _Avoid_: Attention timeout, unread count
+
+**Tray Alert**:
+One aggregate, unacknowledged flashing state of the system-tray icon, started by a qualifying Significant Update while the observation window is hidden. Further qualifying updates do not stack alerts; an explicit user tray-icon activation restores and focuses the window, then acknowledges the Tray Alert.
+_Avoid_: Per-update notification, toast
+
+**Silent Startup**:
+The persisted preference that affects only a sign-in-launched Agent Aura instance. When enabled, a subsequent Significant Update does not automatically show the observation window; when disabled, it does. A manually launched instance always shows the observation window.
+_Avoid_: Global do-not-disturb, integration mute
+
+**Window Pin State**:
+The persisted user setting that keeps the observation window above other windows.
+_Avoid_: Attention Pin Span, Agent Item pinning
+
+**App Server Guardian**:
+A small detached Agent Aura-owned process that retains responsibility for an Agent Aura-managed Codex App Server after the Agent Aura front end exits.
+_Avoid_: Agent Aura front end, remote TUI, orphaned App Server
+
+**WSL App Server Guardian**:
+An App Server Guardian running inside WSL that owns a WSL-hosted local Codex App Server and preserves connected WSL remote TUIs after the Windows Agent Aura front end exits. The Windows front end controls it only through a local-only control channel.
+_Avoid_: Windows service, remote Guardian, Windows-hosted App Server Guardian
+
+**WSL Guardian Control Token**:
+A high-entropy secret generated by Agent Aura and retained in the current Windows user's local configuration. A Windows front end presents it to authenticate requests to the WSL App Server Guardian's WSL-loopback-only control endpoint.
+_Avoid_: network credential, shared WSL password, unauthenticated localhost control
+
+**Front End Lease**:
+A renewable registration held by a running Agent Aura front end with an App Server Guardian. Normal exit detaches it; otherwise it expires after 45 seconds without the required 15-second heartbeats. A missing lease alone never authorizes disconnection of a remote TUI.
+_Avoid_: direct Windows-process inspection, permanent front-end registration, remote-TUI lease
+
+**WSL Connection Session**:
+The period from Agent Aura connecting to one WSL distribution until Aura explicitly disconnects it or that distribution shuts down. It owns the WSL App Server Guardian, its local App Server, and temporary observation routing. Aura exit retains it only while a remote TUI remains connected; otherwise the Guardian ends it.
+_Avoid_: permanent WSL installation, Windows session, Codex Thread
+
+**Conditional Codex Wrapper**:
+A user-approved shell integration that routes `codex` to the WSL Connection Session's remote App Server only while that session's runtime marker is present. Otherwise it invokes the original local Codex command unchanged.
+_Avoid_: permanent remote override, replacement Codex executable, interception of an existing shell
+
+**Active WSL Distribution**:
+The one user-selected WSL distribution that Agent Aura may connect during an MVP run. Its name may be saved as the automatic-connection default; connecting a different distribution first safely disconnects the active one.
+_Avoid_: simultaneous multi-distribution observation, implicit distribution selection
+
+**Disconnect WSL**:
+The explicit Agent Aura action that prevents new remote-TUI connections to an Agent Aura WSL Connection Session while preserving its existing remote TUIs. The Guardian stops the App Server after the last preserved TUI disconnects. A separate Force Disconnect action ends connected TUIs after confirmation.
+_Avoid_: Force Disconnect, Aura exit, WSL shutdown, hide window
+
+**Force Disconnect WSL**:
+The explicit, confirmed Agent Aura action that immediately stops an Active WSL Distribution's Guardian and App Server, ending any connected remote TUIs.
+_Avoid_: Disconnect WSL, Aura exit, WSL shutdown
+
+**Guardian Reattachment**:
+When Agent Aura starts and finds an authenticated WSL Connection Session that is still draining or serving remote TUIs, it reconnects its observer with a new connection epoch and rediscoveres the available Observed Codex Threads. The default-connection preference only creates a session when none exists.
+_Avoid_: replacing a live App Server, restoring stale Agent Message Items, resuming a remote TUI automatically
+
+**WSL Reconnection**:
+While Aura remains open after an unexpected WSL connection loss, it checks once per second whether the Active WSL Distribution has returned, without starting it. When available, it automatically establishes a new Guardian and observer connection. The user may cancel this retry loop, leaving the distribution disconnected until they explicitly connect again.
+_Avoid_: automatic WSL wake-up, restoring a terminated remote TUI, exponential-backoff retry

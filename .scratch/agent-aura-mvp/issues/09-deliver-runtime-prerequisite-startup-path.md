@@ -1,7 +1,7 @@
 # Deliver the runtime-prerequisite startup path
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 ## Goal
@@ -29,3 +29,7 @@ Run the external startup check on Windows 11 in two environments: one with the r
 - Bundling a self-contained .NET runtime.
 - Downloading, elevating, or silently installing a runtime.
 - Changing Codex integration or sign-in startup behaviour.
+
+## Answer
+
+The prototype now publishes a framework-dependent `win-x64` package and includes a launcher that verifies the x64 .NET 10 Windows Desktop Runtime before starting Agent Aura. If the prerequisite is unavailable, the launcher stops before application launch, explains the requirement, and opens Microsoft's official runtime page only after the user opts in. The repeatable external checks cover runtime-present and runtime-missing Windows 11 environments, and record the package separately from the shared machine-wide runtime.

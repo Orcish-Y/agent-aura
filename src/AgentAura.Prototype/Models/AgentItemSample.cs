@@ -10,13 +10,15 @@ public sealed class AgentItemSample : INotifyPropertyChanged
         string title,
         string project,
         string directory,
-        string detail)
+        string detail,
+        string? threadId = null)
     {
         State = state;
         _title = title;
         Project = project;
         Directory = directory;
         Detail = detail;
+        ThreadId = threadId;
     }
 
     public AgentItemState State { get; }
@@ -43,6 +45,8 @@ public sealed class AgentItemSample : INotifyPropertyChanged
     public string ProjectContext => $"{Project} · {Directory}";
 
     public string Detail { get; }
+
+    public string? ThreadId { get; }
 
     public bool IsHovered
     {

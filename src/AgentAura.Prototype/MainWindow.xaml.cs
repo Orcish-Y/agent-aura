@@ -1,3 +1,4 @@
+using AgentAura.Prototype.BridgePrototype;
 using AgentAura.Prototype.Models;
 
 namespace AgentAura.Prototype;
@@ -7,12 +8,14 @@ public partial class MainWindow : Window
     private readonly WindowStateStore _windowStateStore;
     private readonly TrayController _trayController;
     private readonly PrototypeViewModel _viewModel = new();
+    private readonly BridgePrototypeController? _bridgePrototype;
     private bool _canClose;
 
     public MainWindow(WindowStateStore windowStateStore, TrayController trayController)
     {
         _windowStateStore = windowStateStore;
         _trayController = trayController;
+        _bridgePrototype = BridgePrototypeController.TryCreate(_viewModel);
         DataContext = _viewModel;
         InitializeComponent();
         Loaded += OnLoaded;
@@ -37,11 +40,16 @@ public partial class MainWindow : Window
 
     public void CloseForExit()
     {
+        if (_bridgePrototype is not null)
+        {
+            _bridgePrototype.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
         _canClose = true;
         Close();
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         var state = _windowStateStore.RecoverToVisibleScreen(_windowStateStore.LoadOrDefault());
         Left = state.Left;
@@ -51,6 +59,10 @@ public partial class MainWindow : Window
         _viewModel.IsPinned = state.IsPinned;
         Topmost = state.IsPinned;
         _viewModel.IsHeaderVisible = !state.IsPinned || IsMouseOver;
+        if (_bridgePrototype is not null)
+        {
+            await _bridgePrototype.StartAsync();
+        }
     }
 
     private void OnWindowClosing(object? sender, CancelEventArgs e)
@@ -130,7 +142,10 @@ public partial class MainWindow : Window
     {
         if (((FrameworkElement)sender).DataContext is AgentItemSample item)
         {
-            item.Title = $"Alias: {item.Title}";
+            if (!_viewModel.ApplyPrototypeAlias(item))
+            {
+                item.Title = $"Alias: {item.Title}";
+            }
         }
     }
 

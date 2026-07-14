@@ -37,8 +37,10 @@ if ($null -eq $windowsDesktopFramework -or -not $windowsDesktopFramework.version
     throw 'Published runtime configuration does not require the .NET 10 Windows Desktop Runtime.'
 }
 
-$bundledRuntimeFiles = @('coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'PresentationCore.dll', 'PresentationFramework.dll') |
-    Where-Object { Test-Path (Join-Path $OutputDirectory $_) }
+$bundledRuntimeFiles = @(
+    @('coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'PresentationCore.dll', 'PresentationFramework.dll') |
+        Where-Object { Test-Path (Join-Path $OutputDirectory $_) }
+)
 
 if ($bundledRuntimeFiles.Count -gt 0) {
     throw "Publish unexpectedly bundled runtime files: $($bundledRuntimeFiles -join ', ')."

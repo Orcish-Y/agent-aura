@@ -105,7 +105,7 @@
           </Grid.ColumnDefinitions>
           <StackPanel MouseLeftButtonDown="OnHeaderMouseLeftButtonDown">
             <TextBlock Text="Agent Aura" FontSize="16" FontWeight="SemiBold" Foreground="#F4F7FA" />
-            <TextBlock Text="Windows observation-shell prototype" FontSize="11" Foreground="#B8C4D2" />
+            <TextBlock Text="{Binding IntegrationStatus}" FontSize="11" Foreground="#B8C4D2" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
             <Button Content="Pin" Click="OnPinClicked" />

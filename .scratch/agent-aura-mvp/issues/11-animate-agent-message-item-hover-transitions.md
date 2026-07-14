@@ -1,7 +1,7 @@
 # Animate Agent Message Item hover transitions
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 ## Goal
@@ -28,3 +28,7 @@ Exercise enter, leave, and direct item-to-item pointer movement on a real WPF wi
 
 - A Reduced motion preference; it is not part of the MVP.
 - Replacing the established text-overflow behaviour.
+
+## Answer
+
+Agent Message Items now animate between their compact one-line and detailed four-line forms over 150 ms. Leaving one item while entering another starts the outgoing collapse and incoming expansion concurrently. The real-window UI verification exercises enter, leave, direct handoff timing, and direct-hover overflow text without collapsing or losing the item target.

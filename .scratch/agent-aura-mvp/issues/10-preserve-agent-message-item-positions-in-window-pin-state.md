@@ -1,7 +1,7 @@
 # Preserve Agent Message Item positions in Window Pin State
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 ## Goal
@@ -28,3 +28,7 @@ Drive pointer enter and leave events against the real WPF window. Observe Header
 
 - Changing list priority or Attention Pin Span behaviour.
 - Defining new visual styling beyond the existing observation-window model.
+
+## Answer
+
+The WPF observation window retains the Header's layout footprint while its content and translucent surface are hidden in Window Pin State. Agent Message Items therefore remain stationary while the pointer leaves and re-enters the pinned window; unpinning restores normal stacking and a visible Header. The real-window UI verification covers pointer transitions, Header-surface visibility, frameless rendering, Topmost behaviour, and item layout stability.

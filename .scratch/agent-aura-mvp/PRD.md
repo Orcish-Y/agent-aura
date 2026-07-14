@@ -1,165 +1,303 @@
-# Agent Aura MVP
+# Agent Aura MVP — implementation specification
 
 Status: ready-for-agent
 
-## Problem Statement
+## 1. Purpose and scope
 
-Codex CLI users often run long tasks or several Threads in parallel while switching between projects and applications. Once the terminal is no longer in view, it is easy to forget which Thread is still running, which has finished, and which is blocked waiting for approval or input. Returning to every terminal to check wastes attention and makes interruptions easy to miss.
+Agent Aura is a Windows 11 tray application that provides a quiet, glanceable
+observation window for **Observed Codex Threads**. An Observed Codex Thread is a
+local Codex CLI Thread connected to an Agent Aura-managed Codex App Server; all
+other `codex` sessions are outside this MVP.
 
-The user needs a quiet, glanceable Windows 11 observation surface that stays available without occupying the taskbar, preserves the identity of resumable Codex Threads, and makes user-relevant state changes visible without forcing a new way of launching Codex.
+The product delivers:
 
-## Solution
+- One **Agent Message Item** per stable Codex Thread ID, displaying its latest
+  authoritative state and project context.
+- A Windows-native WPF observation surface, tray interaction, settings, and
+  local persistence.
+- Windows-native and one-active-distribution WSL observation paths, each with a
+  Guardian that preserves remote TUIs when the front end exits.
+- Explicit setup, repair, removal, prerequisite detection, and diagnostics.
 
-Agent Aura is a lightweight, semi-transparent Windows 11 desktop application that passively observes local Codex CLI Threads. It presents one Agent Item per resumable Codex Thread in a compact always-available window and uses comfortable, low-saturation status treatments to distinguish running, attention, successful, failed, interrupted, and unknown states.
+The MVP excludes macOS/Linux applications, Codex IDE/App/cloud sources, Dev
+Container observation, ordinary non-remote CLI sessions, toast/sound alerts,
+privacy mode, screen-capture guarantees, history/inbox semantics, and automatic
+terminal activation. Exact visual styling is an implementation concern provided
+the behavior and accessibility requirements below hold.
 
-The application lives primarily in the system tray and does not create a taskbar button. When the observation window is hidden and a Thread reaches a user-relevant state, the tray icon flashes until the user opens the window. Agent Items expand from one line to four on hover, expose useful Thread details and edit/delete controls, and preserve a user-defined Thread Alias by stable Codex thread ID across Agent Aura and Codex CLI restarts.
+## 2. Architectural constraints
 
-Agent Aura does not require users to launch Codex from inside the application. A user-approved Codex integration is installed, checked, repaired, and removed through the application. The exact supported integration transport must be selected from verified Codex capabilities before production implementation.
+- Target `net10.0-windows`, x64, Windows 11; use WPF and MVVM.
+- Ship a framework-dependent `win-x64` package. Do not bundle, download, or
+  silently install .NET. A launcher detects the x64 .NET 10 Windows Desktop
+  Runtime before starting Aura; if missing, it explains the prerequisite and
+  offers a user-invoked link to Microsoft's installer.
+- Use the Agent Aura-managed Codex App Server as the only lifecycle authority.
+  The Windows remote-TUI command is `codex --remote <endpoint>`; App Server
+  `completed`, `failed`, and `interrupted` outcomes are authoritative.
+- The front end owns UI, tray behavior, settings, current runtime items, and
+  Guardian supervision. A shared .NET library owns protocol handling, connection
+  epochs, state transitions, configuration contracts, and IPC DTOs. Windows and
+  WSL Guardians own their respective App Server lifecycle and remote-TUI ingress.
+- Persist only settings, Thread Aliases, WSL control token, and default WSL
+  distribution. Never persist Agent Message Items or their runtime history.
+- All UI-initiated cleanup is asynchronous. It must never wait for WebSocket
+  shutdown or child-process termination on the WPF UI thread.
 
-## User Stories
+The accepted architectural records are [ADR 0001](../../docs/adr/0001-use-agent-aura-managed-codex-app-server.md),
+[ADR 0002](../../docs/adr/0002-use-an-app-server-guardian-after-aura-exit.md),
+[ADR 0003](../../docs/adr/0003-use-a-wsl-local-guardian-and-conditional-codex-wrapper.md),
+and [ADR 0004](../../docs/adr/0004-fix-the-mvp-on-dotnet-wpf.md).
 
-1. As a Codex CLI user, I want to see all currently observed Codex Threads in one compact window, so that I do not need to revisit several terminals.
-2. As a Codex CLI user, I want exactly one Agent Item per resumable Codex Thread, so that multiple turns do not create duplicate entries.
-3. As a Codex CLI user, I want an Agent Item to retain its identity after `codex resume`, so that a resumed conversation remains recognisable.
-4. As a Codex CLI user, I want Agent Aura to observe Codex launched from my usual terminals, so that I do not need to change my workflow.
-5. As a Codex CLI user, I want running Threads to have a distinct state, so that I can tell work is still in progress.
-6. As a Codex CLI user, I want Threads waiting for approval or input to enter the Attention State, so that I know where action is required.
-7. As a Codex CLI user, I want successful Threads to have a familiar muted green treatment, so that completion is recognisable at a glance.
-8. As a Codex CLI user, I want failed Threads to have a familiar muted red treatment, so that errors are recognisable at a glance.
-9. As a Codex CLI user, I want interrupted Threads to be distinguishable from failures, so that cancellation and errors are not conflated.
-10. As a Codex CLI user, I want stale or disconnected Threads to become unknown, so that an abandoned running state is not presented as certain.
-11. As a Codex CLI user, I want a state change to flash twice in the observation window, so that a fresh change catches my eye.
-12. As a Codex CLI user, I want state to be communicated by an icon or shape as well as colour, so that colour is not the only signal.
-13. As a Codex CLI user, I want Attention State items temporarily placed first, so that requests for action are initially easy to find.
-14. As a Codex CLI user, I want an old Attention State item to stop being pinned after a configurable number of Significant Updates elsewhere, so that an abandoned Thread does not permanently dominate the list.
-15. As a Codex CLI user, I want the default Attention Pin Span to be ten Significant Updates, so that temporary priority has a sensible starting point.
-16. As a Codex CLI user, I want to set the Attention Pin Span from 1 to 50 or choose always pinned, so that priority matches my workflow.
-17. As a Codex CLI user, I want streaming text and tool progress excluded from Significant Update counting, so that noisy Threads do not prematurely demote an Attention State item.
-18. As a Codex CLI user, I want a Thread's new activity or renewed Attention State to reset its pin span, so that a newly relevant request returns to the top.
-19. As a Codex CLI user, I want non-pinned Agent Items ordered by their latest state change, so that newly completed or failed work remains prominent.
-20. As a Codex CLI user, I want the collapsed window to show five Agent Items by default, so that it stays compact.
-21. As a Codex CLI user, I want the expanded window to show fifteen Agent Items by default, so that I can inspect more concurrent work.
-22. As a Codex CLI user, I want to configure collapsed capacity from 1 to 10 and expanded capacity from 5 to 30, so that the window fits my display and workload.
-23. As a Codex CLI user, I want expanded capacity to remain at least the collapsed capacity, so that settings cannot create contradictory behaviour.
-24. As a Codex CLI user, I want the list to scroll internally beyond its expanded capacity, so that the window does not grow indefinitely.
-25. As a Codex CLI user, I do not want the expand control to display a hidden-item count, so that the control remains visually quiet.
-26. As a Codex CLI user, I want the expand control hidden when there are no additional items, so that unnecessary controls do not appear.
-27. As a Codex CLI user, I want each Agent Item collapsed to one line, so that I can scan many Threads quickly.
-28. As a Codex CLI user, I want an Agent Item to expand to four lines on hover, so that details are available without opening another screen.
-29. As a Codex CLI user, I want the first expanded line to show state, Thread Alias or title, edit, and delete controls, so that identity and actions are together.
-30. As a Codex CLI user, I want the second expanded line to show project name and working directory, so that I can locate the Thread's work.
-31. As a Codex CLI user, I want the third expanded line to show state, last-change time, and current-turn duration, so that I understand recency and elapsed work.
-32. As a Codex CLI user, I want the fourth expanded line to show the current activity, waiting reason, error summary, or final outcome, so that I can judge what happened.
-33. As a Codex CLI user, I want overflowing title and detail text to be ellipsized within its line without a tooltip, so that the observation window remains compact and predictable.
-34. As a Codex CLI user, I want text truncation to remain the same regardless of visual settings, so that visible content does not depend on a motion preference.
-35. As a Windows user, I do not want a Reduced motion setting, so that the settings surface stays focused and text overflow behavior is consistent.
-36. As a Codex CLI user, I want to assign a persistent Thread Alias, so that I can recognise a conversation by my own name.
-37. As a Codex CLI user, I want a Thread Alias keyed by stable thread ID, so that the correct alias follows a resumed conversation.
-38. As a Codex CLI user, I want title fallback to use Codex title, project folder, and a generic time-based name in that order, so that every Agent Item has a useful label.
-39. As a Codex CLI user, I want deleting an Agent Item to remove it from the current view, so that I can dismiss irrelevant entries.
-40. As a Codex CLI user, I want a deleted Agent Item to reappear when its Thread produces a later Significant Update, so that dismissal does not disable monitoring.
-41. As a Codex CLI user, I want the clear action to remove terminal and unknown items only, so that active running and Attention State Threads remain visible.
-42. As a Codex CLI user, I do not want an unread/read model, so that Agent Aura remains an observation window rather than an inbox.
-43. As a Codex CLI user, I do not want the current Agent Item list restored after Agent Aura restarts, so that stale observations do not return.
-44. As a Codex CLI user, I want aliases and settings restored after Agent Aura restarts, so that intentional customisation persists.
-45. As a Windows user, I want Agent Aura to live in the system tray without a taskbar button, so that it does not occupy taskbar space.
-46. As a Windows user, I want the tray icon to flash when the window is hidden and a Thread enters attention, succeeded, failed, or interrupted, so that I notice meaningful changes.
-47. As a Windows user, I want several changes to produce one continuing tray alert rather than stacked animations, so that alerts remain calm.
-48. As a Windows user, I want a left click on the tray icon to restore and focus the window and stop flashing, so that acknowledgement is immediate.
-49. As a Windows user, I want a tray menu with show/hide, pin, settings, and exit actions, so that core controls remain available while the window is hidden.
-50. As a Windows user, I want clicking the close button to ask whether to hide to tray or exit, so that closing is intentional.
-51. As a Windows user, I want the close dialog to offer “remember my choice,” so that repeated closing is efficient.
-52. As a Windows user, I want to reset the remembered close behaviour in settings, so that the choice is reversible.
-53. As a Windows user, I want cancellation in the close dialog to leave the application unchanged, so that accidental clicks are harmless.
-54. As a Windows user, I want a pinned mode that keeps the window above other windows, so that status remains glanceable.
-55. As a Windows user, I want the Header hidden while pinned and revealed when the pointer enters the window, so that the pinned window stays minimal.
-56. As a Windows user, I want the Header always visible while unpinned, so that normal-window controls are discoverable.
-57. As a Windows user, I want to drag the window through the visible Header, so that I can position it easily.
-58. As a Windows user, I want pin state, window position, and window size persisted, so that my layout survives restarts.
-59. As a multi-monitor Windows user, I want an off-screen saved window moved back onto an available display, so that monitor changes cannot strand it.
-60. As a Windows user, I want optional launch at Windows sign-in, so that monitoring can start automatically.
-61. As a Windows user, I want sign-in launch disabled by default, so that installation does not silently add startup behaviour.
-62. As a Windows user, I want startup to enter the tray by default, so that automatic launch is unobtrusive.
-63. As a Windows user, I want window opacity configurable from 60% to 100% with an 88% default, so that visibility fits my desktop.
-64. As a Windows user, I want opacity to affect the window surface without unnecessarily fading text and state icons, so that details remain legible.
-65. As a Windows user, I want system, light, and dark themes with system as default, so that Agent Aura matches my desktop.
-66. As a Windows user, I want UI scale configurable from 80% to 150%, so that the compact window remains readable.
-67. As a Windows user, I want Windows high-contrast support, so that the interface remains usable with accessibility settings.
-68. As a Windows user, I want Agent Aura to avoid toast notifications and sounds, so that observation stays quiet.
-69. As a Codex CLI user, I want an installer to detect whether Codex and a compatible version are available, so that setup failures are understandable.
-70. As a Codex CLI user, I want to review and approve integration changes before installation, so that global Codex configuration is not changed silently.
-71. As a Codex CLI user, I want one-click install, status check, repair, and removal of the Agent Aura integration, so that setup is manageable without manual configuration.
-72. As a Codex CLI user, I want integration removal to delete only Agent Aura-owned plugin, marketplace, and configuration entries, so that unrelated Codex configuration is preserved.
-73. As a Codex CLI user, I want application uninstall to ask whether to remove the Codex integration, so that I control what remains.
-74. As a Codex CLI user, I want failed setup operations to show the failed action and a copyable diagnostic, so that I can recover or request help.
-75. As a Codex CLI user, I want Agent Aura to recover from local connection failures and show degraded status, so that missing observations are not silently presented as healthy.
-76. As a Codex CLI user, I want clicking an Agent Item to restore or flash the correct terminal when technically reliable, so that I can act on a Thread quickly.
-77. As a Codex CLI user, I want a clear fallback when exact terminal activation is unavailable, so that clicking never targets the wrong window.
-78. As an installer user, I want a self-contained Windows package, so that I do not need to install a separate .NET Runtime.
-79. As a project maintainer, I want the initial WPF prototype measured for startup, idle memory, package size, and stability, so that the runtime choice is evidence-based.
-80. As a project maintainer, I want a Tauri comparison only when WPF fails a core capability or has unacceptable runtime/distribution costs, so that fallback work is purposeful.
+## 3. Product behavior
 
-## Implementation Decisions
+### 3.1 Agent Message Items and state
 
-- The MVP targets Windows 11 only and monitors local Codex CLI Threads only.
-- The default runtime candidate is .NET 10 with WPF and an MVVM-style separation. This is provisional until a disposable technical prototype verifies tray-only behaviour, window behaviour, animation, Codex connectivity, packaging, and acceptable resource use.
-- Tauri is the explicit fallback candidate. It is evaluated only if WPF fails a core capability or produces unacceptable package size, startup time, idle memory, stability, or distribution behaviour.
-- Agent Aura is a tray application with no taskbar button. Its observation window is semi-transparent, frameless, optionally always on top, and collapsible/expandable.
-- A stable Codex-generated thread ID is the canonical identity for a Codex Thread and the persistence key for Thread Alias data.
-- Agent Item runtime state is not restored after Agent Aura restarts. User settings and Thread Alias mappings are persisted.
-- The target state vocabulary is `running`, `attention`, `succeeded`, `failed`, `interrupted`, and `unknown`. A dedicated state-machine decision must map verified Codex events into these states, including stale, disconnect, retry, cancellation, and out-of-order cases.
-- A Significant Update is limited to a Thread entering Attention State, reaching a terminal state, or starting a new turn. Streaming text, tool activity, and progress refreshes are excluded.
-- Attention State items are temporarily pinned. The Attention Pin Span defaults to ten Significant Updates from other Threads, is configurable from 1 to 50, and supports an always-pinned option. New activity on that Thread resets the span.
-- After temporary Attention pinning expires, all Agent Items use most-recent state-change ordering; running items receive no special priority.
-- The clear action removes succeeded, failed, interrupted, and unknown items while retaining running and Attention State items.
-- Deleting an Agent Item dismisses it until its Thread emits a later Significant Update.
-- Agent Items use a one-line collapsed form and a four-line hover form. Detail lines cover identity/actions, project context, state/timing, and current or final activity.
-- Overflowing title and detail text is always ellipsized within its line and does not use tooltips. There is no Reduced motion mode or setting.
-- Collapsed and expanded capacities default to five and fifteen. Their configurable ranges are 1–10 and 5–30; expanded capacity cannot be lower than collapsed capacity. Overflow uses internal scrolling and the expand control does not show hidden count.
-- Pinned mode means always on top with an auto-hidden Header. Unpinned mode uses normal window stacking with the Header always visible.
-- The system tray is the only out-of-window alert surface. Agent Aura does not use Windows toast notifications or sounds in MVP.
-- The tray icon flashes while the window is hidden and a Thread enters attention, succeeded, failed, or interrupted. Opening the observation window acknowledges and stops the tray animation.
-- Closing presents hide-to-tray, exit, cancel, and remember-choice behaviour. Remembered behaviour is resettable from settings.
-- Visual settings include background opacity, theme, UI scale, collapsed capacity, expanded capacity, Attention Pin Span, pin state, startup options, and close-button behaviour.
-- Status styling uses comfortable low-saturation colours plus non-colour cues. Windows high-contrast mode must remain usable.
-- The Codex integration must be passive from the user's perspective: Codex may be launched from the user's ordinary terminal rather than through Agent Aura.
-- Current Codex app-server protocol evidence shows stable UUIDv7 Thread identity and exposes working directory, name, preview, timestamps, source, CLI version, status, and related events. Production implementation must still verify the supported transport for arbitrary Codex TUI instances rather than assuming app-server events are automatically available from them.
-- The selected Codex integration must support explicit-consent installation, health inspection, repair, and removal. It must preserve unrelated Codex plugins, marketplaces, hooks, and configuration.
-- Terminal restoration is best effort and must never activate a terminal that cannot be associated reliably. The exact Windows and terminal-host capability matrix is a research prerequisite.
-- The distributable is self-contained so end users do not need a separately installed .NET Runtime.
-- No architectural decision record is created for the runtime until the WPF prototype resolves the provisional choice.
+The stable Codex Thread ID is item identity and the key for Thread Aliases. An
+item has: Thread ID, working directory, Codex Thread Title, optional Thread
+Alias, per-item Fallback Thread Title, current state, current Turn ID, latest
+state-change time, attention-pin counter, and connection epoch. State is one
+of `observed`, `running`, `attention`, `completed`, `failed`, `interrupted`, or
+`connection disconnected`.
 
-## Testing Decisions
+| Authority input | Required result | Significant Update |
+| --- | --- | --- |
+| First Thread observation | Create item, apply alias, use `observed` absent active-turn information. | No |
+| `turn/started` | `running`; clear attention and old outcome. | Yes |
+| Approval/input/MCP elicitation/permission request | `attention`; never infer it from text or time. | On entry only |
+| `serverRequest/resolved` | `running`, unless a concurrent terminal event wins. | No |
+| `turn/completed` | Exact `completed`, `failed`, or `interrupted`. | Yes |
+| Transport loss | `connection disconnected`, retaining any previous outcome. | No |
 
-- Good tests assert externally observable product behaviour and stable integration contracts. Tests must not depend on WPF ViewModel structure, private classes, animation implementation, local storage layout, or other replaceable internals.
-- The primary product-behaviour seam drives Agent Aura with a controllable Codex Thread event stream and observes the real WPF window. It covers Agent Item identity, state display, Significant Update counting, Attention Pin Span, ordering, clear/delete/reappearance, aliases, capacity, hover expansion, ellipsized text overflow, tray acknowledgement, close behaviour, persistence, and degraded states.
-- Product-behaviour scenarios must include several concurrent Threads, repeated turns in one Thread, `codex resume` identity continuity, rapid state changes, stale/disconnected sources, out-of-order events, duplicate events, more Agent Items than expanded capacity, and more Attention State items than collapsed capacity.
-- The Codex integration contract seam validates captured fixtures for stable thread ID, working directory, title, lifecycle, approval/input, success, failure, interruption, and liveness. A small real-Codex smoke suite verifies supported behaviour against the minimum and current CLI versions.
-- Integration lifecycle tests install into isolated Codex configuration, inspect health, simulate damaged or missing Agent Aura entries, repair them, and remove them. They verify unrelated configuration remains byte-for-byte or semantically unchanged as appropriate.
-- The Windows packaging seam runs the self-contained artifact on a clean Windows 11 environment and verifies startup without a preinstalled Runtime, tray presence, no taskbar button, transparent/topmost behaviour, multi-monitor recovery, close semantics, sign-in startup, and clean uninstall.
-- Terminal activation tests are organised by supported terminal host. Each verifies correct activation when association is proven and safe fallback when it is not.
-- Accessibility checks cover keyboard access to visible controls, high-contrast rendering, non-colour state cues, scale limits, and readable content at the minimum configured opacity.
-- Performance gates record cold startup time, steady-state idle memory, package size, idle CPU, event-burst handling, and UI responsiveness. Exact acceptance thresholds are established by the WPF prototype before the runtime is committed.
-- Because the repository has no existing implementation or tests, there is no local prior art. The first prototype should establish reusable acceptance-test harnesses at the event-stream-to-window seam rather than creating many narrow module tests.
+Correlate events by Thread ID and Turn ID, process transport order within an
+epoch, and deduplicate terminal results by Turn ID. On reconnect, create a newer
+epoch, obtain the App Server's current snapshot and subscriptions, and discard
+late events from older epochs. Aura restart starts with no items, then
+rediscovers current Threads; it does not replay local history.
 
-## Out of Scope
+An Attention State entry resets that item's configurable **Attention Pin Span**
+(default 10). Significant Updates from *other* Threads decrement it exactly
+once; the item's own events do not. Re-entry resets it. A value of 1–50 or
+Always pinned is supported. After expiry the item remains in place; newer
+ordinary updates insert above it. Other items order by latest state change.
 
-- macOS and Linux support.
-- Monitoring Codex IDE extensions, Codex App, or Codex Cloud tasks as first-class sources.
-- Forcing users to launch Codex from inside Agent Aura.
-- Windows toast notifications, notification centre integration, and alert sounds.
-- Read/unread state, acknowledgement history, or inbox semantics.
-- Persisting the Agent Item list across Agent Aura restarts.
-- Privacy mode or a guarantee that the window is excluded from screenshots and screen sharing.
-- A hidden-item count on the expand control.
-- Guaranteed terminal activation for terminal hosts that do not expose a reliable association.
-- Production implementation before the Codex integration, WPF feasibility, terminal recovery, state mapping, and runtime selection decisions are resolved.
-- Cross-platform abstractions added solely for a hypothetical future port.
+**Dismiss Agent Message Item** removes only a runtime entry; a subsequent valid
+event recreates it. **Clear Agent Message Items** removes every runtime entry.
+Neither operation deletes the Thread or Thread Alias.
 
-## Further Notes
+### 3.2 Titles and item interaction
 
-- The current development machine is Windows 11 with Ubuntu WSL2. Windows has .NET SDK and Windows Desktop support at version 10.0.9. The actual WPF build and packaging workflow should execute on the Windows side or in a Windows CI runner.
-- The current Codex CLI observed during planning is version 0.144.1. Its generated app-server protocol describes stable UUIDv7 Thread IDs and Thread status events, but support policy and the path from arbitrary TUI processes to Agent Aura remain research items.
-- The Wayfinder map remains the source of truth for unresolved discovery work. In particular, the specification must be refined with the outcomes of “Determine the reliable Codex event integration,” “Prototype the WPF observation shell,” “Map Codex events to Agent Item state,” “Determine terminal recovery behavior,” “Prototype the Codex-to-WPF bridge,” and “Select the MVP runtime architecture.”
-- The initial WPF technical prototype must validate: tray-only operation, transparent frameless topmost window, Header auto-hide, one-to-four-line Agent Item expansion, ellipsized overflow text, tray flashing, Codex connectivity, self-contained packaging, and clean-machine launch.
-- If a core WPF capability fails or measured distribution/runtime costs are unacceptable, create a like-for-like Tauri prototype before choosing the production runtime.
+The display-title precedence is Thread Alias, Codex Thread Title, then Fallback
+Thread Title. The fallback is `<working-directory leaf> · <first-observed local
+time>`, computed once per item lifecycle. Never obtain, save, or summarise raw
+prompts. A Codex title rename updates a no-alias item immediately without moving
+it or counting as a Significant Update; an alias continues to win until removed.
+
+A collapsed item is one line. Hover expands it to four lines over 150 ms:
+
+1. state, title, edit-alias action, dismiss action;
+2. project name and working directory;
+3. state, last-change time, current-turn duration;
+4. current activity, wait reason, concise error, or final outcome.
+
+All title/detail text ellipsizes in available space, with no tooltip. Directly
+moving between items concurrently begins the prior 150 ms collapse and next
+150 ms expansion. State uses a small leading color square plus accessible name
+and/or text, so color is never the only cue.
+
+Selecting an item acknowledges a Tray Alert but must not activate, flash, or
+guess a terminal. It offers **Copy connected resume command**:
+
+```text
+codex resume --remote <agent-aura-endpoint> <stable-thread-id> --no-alt-screen
+```
+
+This is user-initiated copy only; Aura never launches or resumes Codex on the
+user's behalf.
+
+### 3.3 Window, tray, and settings
+
+The observation window is frameless, transparent/semi-transparent, has no
+enclosing border or taskbar button, and is tray-resident. It supports collapsed
+and expanded lists: defaults 5 and 15; collapsed range 1–10; expanded range
+5–30 and never less than collapsed. Overflow scrolls inside the expanded list.
+Show no hidden-item count and hide the expand control when nothing is hidden.
+
+**Window Pin State** means Topmost. While pinned, the Header's content and
+translucent surface hide when the pointer leaves, but the Header retains its
+layout height so Agent Message Item positions never move. Entering any window
+area restores it above unchanged items. Unpinned windows always show the Header;
+the visible Header is the drag region. Persist pin state, size, and position;
+relocate an off-screen restored position to an available monitor.
+
+When hidden, entering Attention State or a terminal outcome creates one
+aggregate **Tray Alert**. Further qualifying updates do not stack it. Left-click
+on the tray restores and focuses the window, then acknowledges/stops the alert.
+The tray menu contains Show/Hide, Pin, Settings, and Exit. Minimize hides to
+tray. Default close offers Hide to tray, Exit, and Cancel with no preselected
+exit; a remembered Hide/Exit choice is resettable in Settings.
+
+Settings include custom background/text/state colors (each restorable), 30–100%
+background opacity (default 88%, never reducing text/control contrast), 80–150%
+whole-interface scale, capacities, Attention Pin Span, Window Pin State,
+sign-in launch, Silent Startup, and close behavior. Sign-in launch defaults off;
+when enabled, sign-in starts hidden. A manually launched Aura always shows its
+window. With Silent Startup disabled, the next Significant Update shows the
+sign-in-launched window; with it enabled, it does not. Windows High Contrast
+overrides user colors. Restore defaults requires confirmation and resets all
+settings/geometry but not aliases, integration, or current runtime items.
+
+Provide keyboard-reachable visible controls, usable layouts at every scale,
+non-color state cues, and high-contrast rendering. No additional screen-reader
+or reduced-motion feature is committed for this MVP.
+
+### 3.4 Integration health and errors
+
+Settings shows `Connected`, `Checking`, `Needs repair`, or `Unavailable`, with
+Check, Repair, and Remove. State-changing actions preview the affected
+Agent-Aura-owned processes, endpoint metadata, and launcher/wrapper artifacts
+and require confirmation. They never alter unrelated Codex configuration.
+Failures are non-modal notices in the window or Settings, identify the failed
+operation, and expose Retry plus copyable diagnostics. A healthy empty state
+says Aura is waiting for Codex Thread activity; an unhealthy empty state states
+the cause and offers Check/Repair.
+
+## 4. Runtime paths
+
+### 4.1 Windows-native
+
+Aura starts/health-checks its Windows-local App Server and accepts remote TUIs.
+The detached **App Server Guardian** owns the server after Aura exits. It tracks
+remote-TUI connections and a Front End Lease. Normal front-end exit detaches;
+an unexpected loss expires after 45 seconds without 15-second heartbeats. While
+the front end runs, zero TUIs does not stop the server. After Aura has exited,
+the Guardian shuts down only once TUI count is zero: graceful request, maximum
+five seconds, then force terminate. A running remote TUI must never be ended by
+normal Aura exit.
+
+On restart, Aura reattaches instead of replacing a live Guardian/server, creates
+a fresh observer epoch, initializes, lists/resumes available Threads, and
+rebuilds runtime observations. A server failure leaves Aura responsive, marks
+affected items disconnected without inventing an outcome, starts a replacement
+for new connections, and shows the copy-resume recovery path. Existing TUIs
+explicitly reconnect; automatic TUI reconnection is not promised.
+
+### 4.2 WSL
+
+Support one user-selected **Active WSL Distribution** at a time. A WSL-local
+Guardian owns a WSL-loopback App Server, proxy ingress for remote TUIs, a WSL
+Connection Session, and an authenticated WSL-loopback control/observer channel.
+Aura generates and persists a high-entropy WSL Guardian Control Token and holds
+the same 15-second/45-second Front End Lease. Neither App Server nor Guardian
+may bind beyond local WSL networking.
+
+On a user-approved one-time shell integration, a **Conditional Codex Wrapper**
+routes `codex` through the current session only when its runtime marker exists;
+otherwise it executes original `codex` unchanged. Existing shells are unchanged.
+Normal **Disconnect WSL** removes the marker, refuses new TUIs, and drains
+existing TUIs; **Force Disconnect WSL** requires confirmation and ends them.
+The final drain uses the same graceful/five-second-force process and never
+blocks the UI.
+
+The Windows observer connects to the WSL-loopback App Server through Windows
+localhost. For NAT, require `networkingMode=nat`, `localhostForwarding=true`,
+and `firewall=true`, but gate support with a Windows localhost readiness check,
+not configuration inference. Do not create port proxies, wildcard/LAN binds,
+firewall exceptions, or modify/restart/wake WSL. If unavailable show:
+“无法连接到 WSL 的本地 Codex App Server；此 WSL 发行版暂不可观察。” with Retry
+and an explanation of user-controlled forwarding/network-mode recovery.
+
+On Aura restart, reattach to an authenticated live Guardian using a new epoch.
+After unexpected WSL loss while Aura stays open, show disconnected and check
+once per second whether the already-running distribution has returned; never
+wake a stopped distribution. On return create a new Guardian/observer session.
+Cancel Reconnection stops this loop until explicit connect. Do not promise to
+restore terminated TUIs.
+
+## 5. Data and interface contracts
+
+Persist settings, aliases keyed by Thread ID, and WSL connection data in a
+per-user local configuration store with atomic replacement/validation. Secrets
+must not appear in UI diagnostics. Model the following replaceable interfaces:
+
+| Interface | Required contract |
+| --- | --- |
+| `ICodexAppServerObserver` | Initialize, list/load/resume Threads, subscribe to events, expose connection epoch and transport loss. |
+| `IThreadStateReducer` | Deterministically converts current epoch App Server inputs into item state and Significant Updates; rejects stale/duplicate results. |
+| `IGuardianClient` | Start/attach, lease heartbeat/detach, health, drain/force-stop, and event/TUI-count reporting; all calls cancellable and non-blocking to UI. |
+| `ISettingsStore` | Validated, atomic settings/alias/WSL credential persistence; never item history. |
+| `IIntegrationManager` | Previewed, confirmed Check/Repair/Remove and user-approved setup; owns only Aura artifacts. |
+| `ITrayController` | Aggregate alert, acknowledgement, menu commands, and no-taskbar window lifecycle. |
+
+Keep protocol DTOs and Guardian IPC DTOs in the shared library. App Server calls
+must use only the supported protocol; do not read private Codex session records.
+
+## 6. Acceptance criteria and verification
+
+1. A separately launched connected remote TUI is discovered and represented by
+   one item through repeated turns and `codex resume`; exact turn outcomes,
+   title catch-up/rename, Attention State, alias precedence, and stale-epoch
+   rejection are verified against current supported Codex CLI.
+2. Dismiss/Clear preserve aliases and recreate items only after valid later
+   events. No runtime list appears after restart before rediscovery.
+3. Attention Pin Span, duplicate suppression, ordering, capacity, scrolling,
+   direct-hover concurrent animation, ellipsis, pin-header stationary layout,
+   tray acknowledgement, close behavior, persistence, and degraded state are
+   covered through a controllable event stream driving the real WPF window.
+4. Window tests prove tray-only/no-taskbar operation, frameless transparency,
+   Topmost behavior, multi-monitor recovery, sign-in behavior, scale bounds,
+   keyboard controls, high contrast, and non-color state cues.
+5. Windows Guardian tests prove Aura Exit returns UI/tray control within 250 ms,
+   preserves a remote TUI, drains at last disconnect, uses five-second forced
+   fallback, and reattaches with a fresh epoch.
+6. WSL tests cover manual/default connect, wrapper fallback, one active
+   distribution, loopback-only listeners, NAT/mirrored localhost readiness,
+   drain versus confirmed force disconnect, reattachment, no-wake one-second
+   recovery, and Cancel Reconnection.
+7. Clean Windows 11 package tests cover runtime-present startup, runtime-missing
+   user-invoked installer link, setup/repair/remove ownership boundaries, and
+   uninstall choice for integration removal.
+8. Every comparable resource run collects uninterrupted samples. Regression
+   envelope: package <=1 MiB; median startup <=3.0 s; private-memory P95 <=260
+   MiB; working-set P95 <=340 MiB; CPU average/P95 <=1%/3%; no >+32 MiB private
+   memory or >+32 handles across first-to-last five-minute windows without
+   sustained monotonic growth. Repeat numerical breaches once; investigate
+   confirmed breaches, crashes, incomplete sampling, or sustained growth in WPF.
+   Aspirational optimization targets remain 1.5 s startup and 100 MiB idle
+   working set, not architecture-change gates.
+
+## 7. Implementation-ticket boundaries
+
+1. **Solution and shared contracts** — projects, DTOs, reducer, persistence
+   schema/migrations, deterministic reducer tests.
+2. **Windows App Server observer** — owned-server startup, discovery/subscription,
+   epoch recovery, title/attention/outcome contract fixtures and real smoke test.
+3. **Windows Guardian and lifecycle** — detached process, leases, remote-TUI
+   counting/proxy boundary, drain/re-attach/failure recovery.
+4. **WPF observation shell** — list/layout/animation/window pin, item controls,
+   accessibility, tray and close lifecycle.
+5. **Settings and integration management** — settings UI/store, aliases,
+   setup/check/repair/remove, diagnostics, startup and runtime launcher.
+6. **WSL connection path** — Guardian deployment/control, wrapper, local proxy,
+   readiness gate, drain/force disconnect and recovery UX.
+7. **Packaging and quality gates** — clean-machine installer/uninstall coverage,
+   behavior acceptance harness, Windows/WSL smoke suites, and resource regression
+   automation.
+
+Items 2 and 3 form the Windows observation dependency chain; item 4 can proceed
+against shared test fixtures; item 6 depends on the shared contracts and may
+proceed after Windows Guardian semantics are fixed. Item 7 runs throughout and
+is final release gating.
+
+## 8. Risks and explicit resolution status
+
+- Codex App Server behavior is version-sensitive: pin a tested minimum/current
+  CLI smoke matrix and make unsupported versions `Unavailable` with diagnostics.
+- Terminal-window identity is intentionally unavailable; copy-resume is the
+  complete MVP recovery behavior, not a temporary gap.
+- The WPF prototype misses aspirational resource goals; regression guards and
+  focused WPF optimization are required, not a UI-stack substitution.
+- WSL remains local-only and user-controlled; its forwarding/readiness path must
+  fail safely without network or WSL configuration mutation.
+
+No product or architecture decision remains unresolved before implementation.
