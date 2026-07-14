@@ -4,6 +4,24 @@ These `ready-for-agent` tickets deliver the Windows 11 MVP specified in `.scratc
 
 Work the **frontier**: any ticket whose blockers are all done.
 
+## Recommended implementation order
+
+For one implementation stream, work these tickets in order:
+
+1. Establish shared domain contracts and durable settings.
+2. Deliver Windows App Server observation.
+3. Deliver the WPF observation window and tray experience.
+4. Deliver Windows App Server Guardian lifecycle.
+5. Deliver settings, integration management, and runtime prerequisite handling.
+6. Deliver the WSL Connection Session.
+7. Deliver packaging and MVP quality gates.
+
+After the shared contracts ticket, Windows App Server observation and the WPF
+observation window may proceed in parallel. After both are ready, the Guardian
+and settings tickets may also proceed in parallel where their explicit blockers
+allow it. The list above is the recommended order when one implementation stream
+is working alone.
+
 ## Establish shared domain contracts and durable settings
 
 **What to build:** The deterministic foundation that turns App Server inputs into current Agent Message Items and safely retains only the user choices that must survive a restart.
