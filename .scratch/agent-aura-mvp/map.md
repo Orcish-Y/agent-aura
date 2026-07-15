@@ -45,6 +45,7 @@ Produce an implementation-ready MVP product and technical specification for Agen
 - [Prototype WSL NAT observation connectivity](issues/19-prototype-wsl-nat-observation-connectivity.md) — NATlocalhost forwarding supports the Windows observer-to-WSL loopback App Server path without a LAN listener; readiness-gated fallback never changes WSL networking.
 - [Select the MVP runtime architecture](issues/07-select-the-mvp-runtime-architecture.md) — the MVP is fixed on .NET 10 + WPF with explicit Windows/WSL Guardian boundaries, framework-dependent distribution, and WPF-only performance regression handling.
 - [Write the implementation-ready MVP specification](issues/08-write-the-implementation-ready-mvp-spec.md) — the implementation-ready contract, acceptance gates, risks, and seven delivery-ticket boundaries are consolidated in [PRD.md](PRD.md).
+- [Investigate Codex 0.144.1 App Server title synchronization](issues/20-investigate-codex-01441-title-synchronization.md) — the apparent failure was an unsubmitted `/rename`; a Windows `0.144.1` remote TUI emits `thread/name/updated` and `thread/read` immediately catches up.
 
 ## Not yet specified
 
